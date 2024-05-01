@@ -90,7 +90,7 @@ if __name__ == "__main__":
     train = trainer()
     print ("=====================================")
     print("Start Training")
-    train.train(100)
+    train.train(300_000)
     print ("=====================================")
     while 1 : 
         play(train)

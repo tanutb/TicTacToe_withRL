@@ -3,12 +3,12 @@
 import random
 
 class QLearningAgent:
-    def __init__(self, alpha=0.01, gamma=0.9, epsilon=0.1 , _max = 3 , decay_factor = 0.99996):
+    def __init__(self, alpha=0.001, gamma=0.9, epsilon=0.1 , _max = 3 , decay_factor = 0.99999):
         self.q_values = {}
         self.alpha = alpha  # learning rate
         self.gamma = gamma  # discount factor
         self.epsilon = 1  # exploration rate
-        self.min_epsilon = 0.1  # minimum exploration rate
+        self.min_epsilon = epsilon  # minimum exploration rate
         self.epsilon_decay_rate = decay_factor 
         self.max = _max
 
