@@ -1,7 +1,9 @@
+##### Some part of this code generate from CHATGPT
+
 import random
 
 class QLearningAgent:
-    def __init__(self, alpha=0.1, gamma=0.9, epsilon=0.1 , _max = 3 , decay_factor = 0.99996):
+    def __init__(self, alpha=0.01, gamma=0.9, epsilon=0.1 , _max = 3 , decay_factor = 0.99996):
         self.q_values = {}
         self.alpha = alpha  # learning rate
         self.gamma = gamma  # discount factor
@@ -9,7 +11,8 @@ class QLearningAgent:
         self.min_epsilon = 0.1  # minimum exploration rate
         self.epsilon_decay_rate = decay_factor 
         self.max = _max
-    
+
+    #### Try to use decay_epsilon to reduce over estimated Q values
     def decay_epsilon(self):
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay_rate)
     
@@ -67,7 +70,6 @@ class QLearningAgent:
     def get_max_action(self, state):
         action_list = self.get_legal_actions(state)
         max_q = max([self.get_q_value(state, a) for a in action_list])
-        print([self.get_q_value(state, a) for a in action_list])
         best_actions = [a for a in self.get_legal_actions(state) if self.get_q_value(state, a) == max_q][0]
         row_index = best_actions // self.max
         col_index = best_actions % self.max

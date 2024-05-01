@@ -1,3 +1,5 @@
+##### Some part of this code generate from CHATGPT
+
 class TicTacToe:
     def __init__(self):
         self.board = [[" " for _ in range(3)] for _ in range(3)]

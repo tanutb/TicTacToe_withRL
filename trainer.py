@@ -33,20 +33,18 @@ class trainer:
             self.agent.decay_epsilon()
 
             print("ep : {} , epsilon , {}".format(str(_),str(self.agent.epsilon)))
-
+    
         # self.env.print_board()
 
-def play(trainer ):
+def play(trainer):
 
 
     ####for play
-    Agent = train.get_agent()
-    ENV = train.get_env()
+    Agent = trainer.get_agent()
+    ENV = trainer.get_env()
     state = ENV.reset()
 
     Q = Agent.get_lasted_q_value()
-    print(Q )
-    print("len Q" , len(Q) )
 
     First = True
     while True : 
@@ -59,6 +57,7 @@ def play(trainer ):
 
         reward , next_state , done = ENV.step(action)
         ENV.print_board()
+        print("Bot put {} in {}" . format(ENV.current_player,action))
         if done : 
             print ("++++++++++++++++++++++++++++++++")
             print ("YOU lose") 
@@ -67,14 +66,13 @@ def play(trainer ):
             break
 
         ENV.change_player()
-        
-        print("current_player" , ENV.current_player)
-        print("(+++++++++++++++)")
-        action = int(input("Enter :"))
+        print ("++++++++++++++++++++++++++++++++")
+        action = int(input("Enter index (0-8):"))
         row_index = action // 3
             # Calculate column index
         col_index = action % 3
         player = (row_index , col_index)
+        print("Player put {} in {}" . format(ENV.current_player,player))
         reward , next_state , done = ENV.step(player)
         ENV.print_board()
         if done : 
@@ -85,13 +83,15 @@ def play(trainer ):
             break
 
         ENV.change_player()
-
+        print ("++++++++++++++++++++++++++++++++")
         state = next_state
         
 if __name__ == "__main__":
     train = trainer()
+    print ("=====================================")
     print("Start Training")
-    train.train(100000)
+    train.train(100)
+    print ("=====================================")
     while 1 : 
         play(train)
 
