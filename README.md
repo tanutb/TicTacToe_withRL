@@ -7,6 +7,7 @@ Current Algorithm
 # Running
 Run to training Qlearning 
 ```
-python3 trainer.py
+python trainer.py
 ```
-For now, have fixed parameter
+For now, have fixed parameter and BOT will always take the first round
+
