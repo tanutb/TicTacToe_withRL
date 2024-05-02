@@ -1,9 +1,10 @@
 ##### Some part of this code generate from CHATGPT
 
 import random
+import os
 
 class QLearningAgent:
-    def __init__(self, alpha=0.001, gamma=0.9, epsilon=0.1 , _max = 3 , decay_factor = 0.99999):
+    def __init__(self, alpha=0.1, gamma=0.90, epsilon=0.1 , _max = 3 , decay_factor = 0.999):
         self.q_values = {}
         self.alpha = alpha  # learning rate
         self.gamma = gamma  # discount factor
@@ -11,6 +12,7 @@ class QLearningAgent:
         self.min_epsilon = epsilon  # minimum exploration rate
         self.epsilon_decay_rate = decay_factor 
         self.max = _max
+        self.name = "QLearning"
 
     #### Try to use decay_epsilon to reduce over estimated Q values
     def decay_epsilon(self):
@@ -28,12 +30,18 @@ class QLearningAgent:
         row_index, col_index = action
         action = row_index * self.max + col_index
         action_list = self.get_legal_actions(next_state)
+
+        '''
+        QLearning Equation
+        Q(s,a) <- Q(s,q) + a * ( R + gamma * max( Q(s',a')) - Q(s,a) ) 
+        '''
         if action_list == [] : 
             
             self.q_values[(state, action)] = reward
         else :
-            max_next_q = max([self.get_q_value(next_state, a) for a in action_list])
-            new_q = self.get_q_value(state, action) + self.alpha * (reward + self.gamma * max_next_q)
+            max_next_q = max([self.get_q_value(next_state, a) for a in range(self.max**2)])
+            current_Q = self.get_q_value(state, action)
+            new_q = current_Q + self.alpha * (reward + (self.gamma * max_next_q) - current_Q)
             self.q_values[(state, action)] = new_q
 
     def get_legal_actions(self, state):
@@ -74,4 +82,36 @@ class QLearningAgent:
         row_index = best_actions // self.max
         col_index = best_actions % self.max
         return (row_index , col_index)
+    
+    def save(self, file_path=None):
+        if file_path == None : file_path = self.name
+        current_path = os.getcwd()
+        if not os.path.exists('save'):
+            # If it doesn't exist, create it
+            os.makedirs('save')
+        path = os.path.join(current_path,'save',file_path+".save")
+        with open(path, "w") as file:
+            # Iterate over the dictionary items and write them to the file
+            for key, value in self.q_values.items():
+                file.write(f"{key}: {value}\n")
+
+    def load(self, file_path) :
+
+        loaded_dict = {}
         
+        current_path = os.getcwd()
+        if not os.path.exists('save'):
+            # If it doesn't exist, create it
+            assert "NO SAVE FLODER"
+
+        path = os.path.join(current_path,'save',file_path+".save")
+        # Open the file in read mode
+        with open(path, "r") as file:
+            # Iterate over each line in the file
+            for line in file:
+                # Split the line into key and value using the colon as a delimiter
+                key, value = line.strip().split(": ")
+                # Update the loaded_dict with the key-value pair
+                loaded_dict[key] = value
+
+        return loaded_dict

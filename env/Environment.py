@@ -50,6 +50,7 @@ class TicTacToe:
 
     def reset(self):
         self.board = [[" " for _ in range(3)] for _ in range(3)]
+        self.current_player = "X"
         return self.get_state()
 
     def step(self , action):
@@ -59,12 +60,12 @@ class TicTacToe:
             self.board[row][col] = self.current_player
             winner = self.check_winner()
             if winner:
-                reward = 1
+                reward = 1.0
                 return reward , self.get_state() , True
             elif self.is_board_full():
-                reward = -10
+                reward = 0.0
                 return reward , self.get_state(), True
             
-        return 0 , self.get_state(), False
+        return 0.0 , self.get_state(), False
 
 
