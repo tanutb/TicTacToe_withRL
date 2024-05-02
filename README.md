@@ -5,9 +5,9 @@
  - SARSA
 
 # Running
-Run to training Qlearning 
+Run to training and play using Qlearning 
 ```
-python trainer.py
+python play.py
 ```
 For now, fixed parameter
 
