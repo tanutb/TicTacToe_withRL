@@ -1,0 +1,5 @@
+
+__pycache__/trainer.cpython-39.pyc
+env/__pycache__/Environment.cpython-39.pyc
+save/QLearning.save
+RL_Agent/__pycache__/QLearning.cpython-39.pyc

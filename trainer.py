@@ -4,7 +4,8 @@ from env.Environment import TicTacToe
 class trainer:
     def __init__(self) -> None:
         self.env   = TicTacToe()
-        self.agent = QLearning.QLearningAgent()
+        # self.agent = QLearning.QLearningAgent()
+        self.agent = SARSA.SARSAAgent()
     
     def get_env(self):
         return self.env
@@ -14,6 +15,7 @@ class trainer:
 
     def train(self,ep):
         for _ in range(ep) : 
+
             state = self.env.reset()
 
             while True : 
@@ -24,11 +26,15 @@ class trainer:
 
                 self.agent.update_q_value(state, action, reward, next_state)
 
-                if done : break
+                if done : 
+                    break
 
                 self.env.change_player()
 
+
                 state = next_state
+
+                
 
             self.agent.decay_epsilon()
 

@@ -4,7 +4,7 @@ import random
 import os
 
 class QLearningAgent:
-    def __init__(self, alpha=0.1, gamma=0.90, epsilon=0.1 , _max = 3 , decay_factor = 0.999):
+    def __init__(self, alpha=0.01, gamma=0.90, epsilon=0.1 , _max = 3 , decay_factor = 0.999):
         self.q_values = {}
         self.alpha = alpha  # learning rate
         self.gamma = gamma  # discount factor
@@ -53,7 +53,7 @@ class QLearningAgent:
         return [i for i in range(9) if temp[i] == " "]
 
     def get_action(self, state):
-        if random.random() < self.epsilon:
+        if random.uniform(0,1) < self.epsilon:
             random_action = random.choice(self.get_legal_actions(state))
             row_index = random_action // self.max
             # Calculate column index

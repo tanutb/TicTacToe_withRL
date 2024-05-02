@@ -65,7 +65,7 @@ class SARSAAgent:
             col_index = random_action % self.max
             return (row_index , col_index)
         else:
-            q_values = [self.get_q_value(state, a) for a in self.get_legal_actions(state)]
+            q_values = [self.get_q_value(state, a) for a in range(self.max**2)]
             max_q = max(q_values)
             best_actions = [a for a in self.get_legal_actions(state) if self.get_q_value(state, a) == max_q]
             ac = random.choice(best_actions)
