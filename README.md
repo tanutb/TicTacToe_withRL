@@ -1,5 +1,5 @@
 # TicTacToe_withRL
- Solve Tic Tac Toe game using Reinforcement Learning. In current environment doesn't have a penalty for losing. make agent doesn't have enthusiastic for winning that much. However it's still playable.
+Solve Tic Tac Toe game implemented using basic reinforcement learning. This project is practice for understanding reinforcement algorithms. In some parts of the code may have inefficiencies or suboptimal writing.
 #### Current Algorithm 
  - Q Learning
  - DoubleQ Learning
