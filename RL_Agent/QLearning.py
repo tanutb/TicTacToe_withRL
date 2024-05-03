@@ -4,7 +4,7 @@ import random
 import os
 
 class QLearningAgent:
-    def __init__(self, alpha=0.01, gamma=0.90, epsilon=0.1 , _max = 3):
+    def __init__(self, alpha=0.01, gamma=0.90, epsilon=0.01 , _max = 3):
         self.q_values = {}
         self.alpha = alpha  # learning rate
         self.gamma = gamma  # discount factor
