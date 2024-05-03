@@ -4,18 +4,19 @@ import os
 
 
 class SARSAAgent:
-    def __init__(self, alpha=0.01, gamma=0.90, epsilon=0.1 , _max = 3 , decay_factor = 0.999):
+    def __init__(self, alpha=0.01, gamma=0.90, epsilon=0.1 , _max = 3):
         self.q_values = {}
         self.alpha = alpha  # learning rate
         self.gamma = gamma  # discount factor
+        self.max_epsilon = 1 
         self.epsilon = 1  # exploration rate
-        self.min_epsilon = epsilon  # minimum exploration rate
-        self.epsilon_decay_rate = decay_factor 
+        self.min_epsilon = 0.1  # minimum exploration rate
         self.max = _max
         self.name = "SARSA"
 
-    def decay_epsilon(self):
-            self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay_rate)
+    def decay_epsilon(self , nstep , N):
+        r = max([(N - nstep) / N , 0])
+        self.epsilon = (self.max_epsilon - self.min_epsilon) * r + self.min_epsilon
     
     def get_lasted_q_value(self):
         return self.q_values
@@ -65,7 +66,7 @@ class SARSAAgent:
             col_index = random_action % self.max
             return (row_index , col_index)
         else:
-            q_values = [self.get_q_value(state, a) for a in range(self.max**2)]
+            q_values = [self.get_q_value(state, a) for a in self.get_legal_actions(state)]
             max_q = max(q_values)
             best_actions = [a for a in self.get_legal_actions(state) if self.get_q_value(state, a) == max_q]
             ac = random.choice(best_actions)

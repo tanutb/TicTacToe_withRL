@@ -15,13 +15,15 @@ def play(trainer , SELECT_PLAYER='1'):
         print("++++++++++++++++++++++++++++++++")
         if SELECT_PLAYER == "2" :
             
-            # if First :
-            #     action = Agent.get_random_action(state)
-            #     First = False
-            # else : 
-            action = Agent.get_max_action(state)
+            if First :
+                print("+ I'll random for you +")
+                action = Agent.get_random_action(state)
+                First = False
+            else : 
+                action = Agent.get_max_action(state)
 
-            print([Q[(state,a)] for a in range(9)])
+            print([(a , Q[(state,a)]) for a in Agent.get_legal_actions(state)])
+
             reward , next_state , done = ENV.step(action)
             ENV.print_board()
             print("Bot put {} in {}" . format(ENV.current_player,action))
@@ -51,17 +53,18 @@ def play(trainer , SELECT_PLAYER='1'):
         reward , next_state , done = ENV.step(player)
         ENV.print_board()
         if done : 
-            if ENV.is_board_full() : 
+            if reward == 1.0 : 
+                print ("++++++++++++++++++++++++++++++++")
+                print ("YOU WIN") 
+                _ = input("Press any keys to retry, exit with Ctrl + C")
+                print ("++++++++++++++++++++++++++++++++")
+                break
+            
+            elif ENV.is_board_full() : 
                 print ("++++++++++++++++++++++++++++++++")
                 print ("TIE!") 
                 _ = input("Press any keys to retry, exit with Ctrl + C")
                 print ("++++++++++++++++++++++++++++++++") 
-                break
-            else :
-                print ("++++++++++++++++++++++++++++++++")
-                print ("YOU Win") 
-                _ = input("Press any keys to retry, exit with Ctrl + C")
-                print ("++++++++++++++++++++++++++++++++")
                 break
 
         ENV.change_player()
@@ -71,24 +74,27 @@ def play(trainer , SELECT_PLAYER='1'):
         if SELECT_PLAYER == "1" :
             action = Agent.get_max_action(state)
 
-            print([Q[(state,a)] for a in range(9)])
+            print([(a , Q[(state,a)]) for a in Agent.get_legal_actions(state)])
             reward , next_state , done = ENV.step(action)
             ENV.print_board()
             print("Bot put {} in {}" . format(ENV.current_player,action))
             
             if done : 
-                if ENV.is_board_full() : 
-                    print ("++++++++++++++++++++++++++++++++")
-                    print ("TIE!") 
-                    _ = input("Press any keys to retry, exit with Ctrl + C")
-                    print ("++++++++++++++++++++++++++++++++") 
-                    break
-                else :
+
+                if reward == 1.0 : 
                     print ("++++++++++++++++++++++++++++++++")
                     print ("YOU lose") 
                     _ = input("Press any keys to retry, exit with Ctrl + C")
                     print ("++++++++++++++++++++++++++++++++")
                     break
+
+                elif ENV.is_board_full() : 
+                    print ("++++++++++++++++++++++++++++++++")
+                    print ("TIE!") 
+                    _ = input("Press any keys to retry, exit with Ctrl + C")
+                    print ("++++++++++++++++++++++++++++++++") 
+                    break
+
             state = next_state
             ENV.change_player()
         

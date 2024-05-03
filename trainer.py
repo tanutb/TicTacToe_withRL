@@ -14,9 +14,10 @@ class trainer:
         return self.agent
 
     def train(self,ep):
-        for _ in range(ep) : 
+        for step in range(ep) : 
 
             state = self.env.reset()
+            temp = None
 
             while True : 
 
@@ -27,18 +28,22 @@ class trainer:
                 self.agent.update_q_value(state, action, reward, next_state)
 
                 if done : 
+                    if reward == 1 : 
+                        ######## Penalty for agent in bad previous move
+                        pstate , paction = temp
+                        self.agent.update_q_value(pstate, paction, -10, state)
                     break
 
                 self.env.change_player()
 
-
+                temp = state , action
                 state = next_state
-
+            
                 
 
-            self.agent.decay_epsilon()
+            self.agent.decay_epsilon(step , ep)
 
-            print("ep : {} , epsilon , {}".format(str(_),str(self.agent.epsilon)))
+            print("ep : {} , epsilon , {}".format(str(step),str(self.agent.epsilon)))
 
         self.agent.save()
 

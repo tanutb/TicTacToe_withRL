@@ -4,19 +4,20 @@ import random
 import os
 
 class QLearningAgent:
-    def __init__(self, alpha=0.01, gamma=0.90, epsilon=0.1 , _max = 3 , decay_factor = 0.999):
+    def __init__(self, alpha=0.01, gamma=0.90, epsilon=0.1 , _max = 3):
         self.q_values = {}
         self.alpha = alpha  # learning rate
         self.gamma = gamma  # discount factor
+        self.max_epsilon = 1 
         self.epsilon = 1  # exploration rate
-        self.min_epsilon = epsilon  # minimum exploration rate
-        self.epsilon_decay_rate = decay_factor 
+        self.min_epsilon = 0.1  # minimum exploration rate
         self.max = _max
         self.name = "QLearning"
 
     #### Try to use decay_epsilon to reduce over estimated Q values
-    def decay_epsilon(self):
-            self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay_rate)
+    def decay_epsilon(self , nstep , N):
+        r = max([(N - nstep) / N , 0])
+        self.epsilon = (self.max_epsilon - self.min_epsilon) * r + self.min_epsilon
     
     def get_lasted_q_value(self):
         return self.q_values
@@ -39,7 +40,7 @@ class QLearningAgent:
             
             self.q_values[(state, action)] = reward
         else :
-            max_next_q = max([self.get_q_value(next_state, a) for a in range(self.max**2)])
+            max_next_q = max([self.get_q_value(next_state, a) for a in self.get_legal_actions(state)])
             current_Q = self.get_q_value(state, action)
             new_q = current_Q + self.alpha * (reward + (self.gamma * max_next_q) - current_Q)
             self.q_values[(state, action)] = new_q
