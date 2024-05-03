@@ -1,11 +1,19 @@
-from RL_Agent import QLearning , SARSA
+from RL_Agent import DoubleQLearning, QLearning , SARSA
 from env.Environment import TicTacToe
 
 class trainer:
-    def __init__(self) -> None:
+    def __init__(self , Algorithm = "SARSA") -> None:
         self.env   = TicTacToe()
-        # self.agent = QLearning.QLearningAgent()
-        self.agent = SARSA.SARSAAgent()
+        
+        if Algorithm == "SARSA" : 
+            self.agent = SARSA.SARSAAgent()
+        elif Algorithm == "QLearning" :
+            self.agent = QLearning.QLearningAgent()
+        elif Algorithm == "DoubleQLearning" :
+            self.agent = DoubleQLearning.DoubleQLearningAgent()
+        else : 
+            print("Invalid Algorithm, using SARSA")
+            self.agent = SARSA.SARSAAgent()
     
     def get_env(self):
         return self.env

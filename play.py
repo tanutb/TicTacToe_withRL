@@ -1,4 +1,6 @@
+import argparse
 from trainer import trainer
+
 
 def play(trainer , SELECT_PLAYER='1'):
     ####for play
@@ -28,17 +30,18 @@ def play(trainer , SELECT_PLAYER='1'):
             ENV.print_board()
             print("Bot put {} in {}" . format(ENV.current_player,action))
             if done : 
-                if ENV.is_board_full() : 
+                if reward == 1.0 : 
+                    print ("++++++++++++++++++++++++++++++++")
+                    print ("YOU LOSE") 
+                    _ = input("Press any keys to retry, exit with Ctrl + C")
+                    print ("++++++++++++++++++++++++++++++++")
+                    break
+                
+                elif ENV.is_board_full() : 
                     print ("++++++++++++++++++++++++++++++++")
                     print ("TIE!") 
                     _ = input("Press any keys to retry, exit with Ctrl + C")
                     print ("++++++++++++++++++++++++++++++++") 
-                    break
-                else :
-                    print ("++++++++++++++++++++++++++++++++")
-                    print ("YOU lose") 
-                    _ = input("Press any keys to retry, exit with Ctrl + C")
-                    print ("++++++++++++++++++++++++++++++++")
                     break
             state = next_state
             ENV.change_player()
@@ -99,7 +102,12 @@ def play(trainer , SELECT_PLAYER='1'):
             ENV.change_player()
         
 if __name__ == "__main__":
-    train = trainer()
+    parser = argparse.ArgumentParser(description='Basic Tic Tac Toe using Reinforement Algorithm')
+    parser.add_argument('-Agent', help='Algorithm')
+    args = parser.parse_args()
+    Agent = args.Agent
+    print("using : ",Agent)
+    train = trainer(Algorithm=Agent)
     print ("=====================================")
     print("Start Training")
     train.train(50_000)
