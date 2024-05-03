@@ -4,13 +4,14 @@ from env.Environment import TicTacToe
 class trainer:
     def __init__(self , Algorithm = "SARSA") -> None:
         self.env   = TicTacToe()
-        
+        epsilon = 0.001
+        lr = 0.0001
         if Algorithm == "SARSA" : 
-            self.agent = SARSA.SARSAAgent()
+            self.agent = SARSA.SARSAAgent(alpha = lr ,epsilon = epsilon)
         elif Algorithm == "QLearning" :
-            self.agent = QLearning.QLearningAgent()
+            self.agent = QLearning.QLearningAgent(alpha = lr ,epsilon = epsilon)
         elif Algorithm == "DoubleQLearning" :
-            self.agent = DoubleQLearning.DoubleQLearningAgent()
+            self.agent = DoubleQLearning.DoubleQLearningAgent(alpha = lr ,epsilon = epsilon)
         else : 
             print("Invalid Algorithm, using SARSA")
             self.agent = SARSA.SARSAAgent()
@@ -39,7 +40,7 @@ class trainer:
                     if reward == 1 : 
                         ######## Penalty for agent in bad previous move
                         pstate , paction = temp
-                        self.agent.update_q_value(pstate, paction, -10, state)
+                        self.agent.update_q_value(pstate, paction, -1, state)
                     break
 
                 self.env.change_player()

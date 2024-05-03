@@ -10,7 +10,7 @@ class SARSAAgent:
         self.gamma = gamma  # discount factor
         self.max_epsilon = 1 
         self.epsilon = 1  # exploration rate
-        self.min_epsilon = 0.1  # minimum exploration rate
+        self.min_epsilon = epsilon # minimum exploration rate
         self.max = _max
         self.name = "SARSA"
 
