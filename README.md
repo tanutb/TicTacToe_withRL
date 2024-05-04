@@ -8,7 +8,7 @@ Solve Tic Tac Toe game implemented using basic reinforcement learning. This proj
 # Running
 Run to training and play using Qlearning 
 ```
-python play.py -Agent $Algorithm
+python play.py -a {Algorithm_name} -ep {Trainning_episode}
 ```
 Useable Algorithm ```["SARSA" , "QLearning" , "DoubleQLearning"]```
 At present, the parameters have been fixed.
