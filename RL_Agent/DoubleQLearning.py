@@ -12,10 +12,11 @@ class DoubleQLearningAgent:
         self.epsilon = 1  # exploration rate
         self.min_epsilon = epsilon # minimum exploration rate
         self.max = _max
-        self.name = "QLearning"
+        self.name = "DoubleQLearning"
 
     #### Try to use decay_epsilon to reduce over estimated Q values
     def decay_epsilon(self , nstep , N):
+        N = N / 1.5
         r = max([(N - nstep) / N , 0])
         self.epsilon = (self.max_epsilon - self.min_epsilon) * r + self.min_epsilon
     

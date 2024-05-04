@@ -103,14 +103,16 @@ def play(trainer , SELECT_PLAYER='1'):
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Basic Tic Tac Toe using Reinforement Algorithm')
-    parser.add_argument('-Agent', help='Algorithm')
+    parser.add_argument('-a', help='Algorithm')
+    parser.add_argument('-ep', help='Episode for training')
     args = parser.parse_args()
-    Agent = args.Agent
+    Agent = args.a
+    ep = args.ep
     print("using : ",Agent)
-    train = trainer(Algorithm=Agent)
+    train = trainer(Algorithm=Agent , episode= ep)
     print ("=====================================")
     print("Start Training")
-    train.train(50_000)
+    train.train()
 
     print ("=====================================")
     while 1 : 

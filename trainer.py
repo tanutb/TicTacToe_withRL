@@ -2,10 +2,15 @@ from RL_Agent import DoubleQLearning, QLearning , SARSA
 from env.Environment import TicTacToe
 
 class trainer:
-    def __init__(self , Algorithm = "SARSA") -> None:
+    def __init__(self , Algorithm = "SARSA" ,episode = 50000) -> None:
         self.env   = TicTacToe()
-        ep = 0.001
-        lr = 0.0001
+        ep = 0.01
+        lr = 0.001
+        try : 
+            self.episode = int(episode)
+        except : 
+            print("Invalid episode, using 50,000")
+            self.episode = int(episode)
         if Algorithm == "SARSA" : 
             self.agent = SARSA.SARSAAgent(alpha = lr ,epsilon = ep)
         elif Algorithm == "QLearning" :
@@ -22,11 +27,11 @@ class trainer:
     def get_agent(self):
         return self.agent
 
-    def train(self,ep):
-        for step in range(ep) : 
+    def train(self):
+        for step in range(self.episode) : 
 
             state = self.env.reset()
-            temp = None
+            previous = None
 
             while True : 
 
@@ -37,20 +42,21 @@ class trainer:
                 self.agent.update_q_value(state, action, reward, next_state)
 
                 if done : 
-                    if reward == 1 : 
+                    if reward == 1. : 
                         ######## Penalty for agent in bad previous move
-                        pstate , paction = temp
-                        self.agent.update_q_value(pstate, paction, -2, state)
+                        pstate , paction = previous
+
+                        self.agent.update_q_value(pstate, paction, -100, state)
                     break
 
                 self.env.change_player()
 
-                temp = state , action
+                previous = state , action
                 state = next_state
             
                 
 
-            self.agent.decay_epsilon(step , ep)
+            self.agent.decay_epsilon(step , self.episode)
 
             print("ep : {} , epsilon , {}".format(str(step),str(self.agent.epsilon)))
 

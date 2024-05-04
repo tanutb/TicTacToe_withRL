@@ -16,6 +16,7 @@ class QLearningAgent:
 
     #### Try to use decay_epsilon to reduce over estimated Q values
     def decay_epsilon(self , nstep , N):
+        N = N / 1.5
         r = max([(N - nstep) / N , 0])
         self.epsilon = (self.max_epsilon - self.min_epsilon) * r + self.min_epsilon
     

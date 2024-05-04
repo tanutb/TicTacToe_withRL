@@ -63,7 +63,7 @@ class TicTacToe:
                 reward = 1.0
                 return reward , self.get_state() , True
             elif self.is_board_full():
-                reward = 0.1
+                reward = 0.5
                 return reward , self.get_state(), True
             
         return 0.0 , self.get_state(), False

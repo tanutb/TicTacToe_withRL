@@ -15,7 +15,8 @@ class SARSAAgent:
         self.name = "SARSA"
 
     def decay_epsilon(self , nstep , N):
-        r = max([(N - nstep) / N , 0])
+        N = N / 1.5
+        r = max([(N - nstep) / N  , 0])
         self.epsilon = (self.max_epsilon - self.min_epsilon) * r + self.min_epsilon
     
     def get_lasted_q_value(self):
