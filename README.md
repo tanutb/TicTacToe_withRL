@@ -13,6 +13,3 @@ python play.py -a {Algorithm_name} -ep {Trainning_episode}
 Useable Algorithm ```["SARSA" , "QLearning" , "DoubleQLearning"]```
 At present, the parameters have been fixed.
 
-# Evaluating
-will add later
-
