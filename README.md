@@ -8,14 +8,14 @@ This project implements three  reinforcement learning algorithms to teach an age
 Each of these algorithms has been implemented with the goal of providing a clear and practical example of how reinforcement learning can be applied to a simple game environment.
 
 ## Algorithms Implemented
+### SARSA (State-Action-Reward-State-Action)
+SARSA is an on-policy RL algorithm. It differs from Q-Learning in that it updates its Q-values based on the action actually taken by the policy, rather than the action that maximizes the Q-value. This makes SARSA more conservative and can lead to more stable learning in certain environments.
+
 ### Q-Learning
 Q-Learning is an off-policy RL algorithm that seeks to find the best action to take given the current state. It does this by learning a Q-function, which estimates the total reward expected to be received from taking an action in a given state and following the optimal policy thereafter.
 
 ### Double Q-Learning
 Double Q-Learning addresses the overestimation bias often present in Q-Learning by using two separate value functions. Each function is updated independently using the other to determine the value of the next state-action pair, thereby providing more stable and accurate value estimates.
-
-### SARSA (State-Action-Reward-State-Action)
-SARSA is an on-policy RL algorithm. It differs from Q-Learning in that it updates its Q-values based on the action actually taken by the policy, rather than the action that maximizes the Q-value. This makes SARSA more conservative and can lead to more stable learning in certain environments.
 
 ## Usage
 To train and play Tic Tac Toe using one of the implemented algorithms, use the following command:
@@ -30,7 +30,11 @@ To train the agent using Q-Learning for 1000 episodes, run:
 python play.py -a QLearning -ep 1000
 ```
 ## Evaluation 
-We trained the reinforement algorithms for 1,000,000 episodes. For evaluation, we tested the win rate of each reinforement algorithm against a random policy. The evaluation results are documented in the evaluate.ipynb notebook, with the outcomes shown in the graph below:
+We trained the reinforcement learning algorithms for 1,000,000 episodes. For evaluation, we tested the win rate of each reinforcement algorithm against a random policy. The evaluation results are documented in the ```evaluate.ipynb``` notebook, with the outcomes shown in the graph below:
+- The outcomes show that the first player generally has a higher win rate than the second player due to the advantage of setting the initial position.
+- The second player has a lower win rate. As mentioned, the first player takes advantage of setting the position first, making it more challenging for the second player. However, the win rate for the second player did not includes a tie rate of around 10-20%, indicating that the second player did not lose as frequently.
+- The reinforcement learning algorithms implemented do not show significant differences in performance. This is likely because the reinforcement algorithms have converged, resulting in similar outcomes.
+
 
 <img src="https://github.com/tanutb/TicTacToe_withRL/blob/main/img/output.png">
 
