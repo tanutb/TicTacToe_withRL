@@ -1,120 +1,72 @@
 import argparse
-from trainer import trainer
+from trainer import Trainer
 
 
-def play(trainer , SELECT_PLAYER='1'):
-    ####for play
-    Agent = trainer.get_agent()
-    ENV = trainer.get_env()
-    state = ENV.reset()
+def play(trainer, SELECT_PLAYER='1'):
+    agents = (trainer.agent1, trainer.agent2)
+    env = trainer.env
+    state = env.reset()
 
-    Q = Agent.get_lasted_q_value()
-
-    First = True
-    while True : 
-        print("1st Player" , ENV.current_player)
-        ENV.print_board()
+    first = True
+    while True:
+        print("Current Player:", env.current_player)
+        env.print_board()
         print("++++++++++++++++++++++++++++++++")
-        if SELECT_PLAYER == "2" :
-            
-            if First :
+
+        if (SELECT_PLAYER == "1" and env.current_player == "X") or (SELECT_PLAYER == "2" and env.current_player == "O"):
+            action = int(input("Enter index (0-8): "))
+            row_index = action // 3
+            col_index = action % 3
+            player_action = (row_index, col_index)
+            reward, next_state, done = env.step(player_action)
+            print(f"Player ({env.current_player}) put in {player_action}")
+        else:
+            if first and SELECT_PLAYER == "2":
                 print("+ I'll random for you +")
-                action = Agent.get_random_action(state)
-                First = False
-            else : 
-                action = Agent.get_max_action(state)
+                action = agents[0].get_random_action(state)
+                first = False
+            else:
+                action = agents[0].get_max_action(state) if env.current_player == "X" else agents[1].get_max_action(state)
+            reward, next_state, done = env.step(action)
+            print(f"Bot ({env.current_player}) put in {action}")
 
-            print([(a , Q[(state,a)]) for a in Agent.get_legal_actions(state)])
-
-            reward , next_state , done = ENV.step(action)
-            ENV.print_board()
-            print("Bot put {} in {}" . format(ENV.current_player,action))
-            if done : 
-                if reward == 1.0 : 
-                    print ("++++++++++++++++++++++++++++++++")
-                    print ("YOU LOSE") 
-                    _ = input("Press any keys to retry, exit with Ctrl + C")
-                    print ("++++++++++++++++++++++++++++++++")
-                    break
-                
-                elif ENV.is_board_full() : 
-                    print ("++++++++++++++++++++++++++++++++")
-                    print ("TIE!") 
-                    _ = input("Press any keys to retry, exit with Ctrl + C")
-                    print ("++++++++++++++++++++++++++++++++") 
-                    break
-            state = next_state
-            ENV.change_player()
-            
-        print ("++++++++++++++++++++++++++++++++")
-        action = int(input("Enter index (0-8):"))
-        row_index = action // 3
-            # Calculate column index
-        col_index = action % 3
-        player = (row_index , col_index)
-        print("Player put {} in {}" . format(ENV.current_player,player))
-        reward , next_state , done = ENV.step(player)
-        ENV.print_board()
-        if done : 
-            if reward == 1.0 : 
-                print ("++++++++++++++++++++++++++++++++")
-                print ("YOU WIN") 
-                _ = input("Press any keys to retry, exit with Ctrl + C")
-                print ("++++++++++++++++++++++++++++++++")
-                break
-            
-            elif ENV.is_board_full() : 
-                print ("++++++++++++++++++++++++++++++++")
-                print ("TIE!") 
-                _ = input("Press any keys to retry, exit with Ctrl + C")
-                print ("++++++++++++++++++++++++++++++++") 
-                break
-
-        ENV.change_player()
-        print ("++++++++++++++++++++++++++++++++")
-        state = next_state
-
-        if SELECT_PLAYER == "1" :
-            action = Agent.get_max_action(state)
-
-            print([(a , Q[(state,a)]) for a in Agent.get_legal_actions(state)])
-            reward , next_state , done = ENV.step(action)
-            ENV.print_board()
-            print("Bot put {} in {}" . format(ENV.current_player,action))
-            
-            if done : 
-
-                if reward == 1.0 : 
-                    print ("++++++++++++++++++++++++++++++++")
-                    print ("YOU lose") 
-                    _ = input("Press any keys to retry, exit with Ctrl + C")
-                    print ("++++++++++++++++++++++++++++++++")
-                    break
-
-                elif ENV.is_board_full() : 
-                    print ("++++++++++++++++++++++++++++++++")
-                    print ("TIE!") 
-                    _ = input("Press any keys to retry, exit with Ctrl + C")
-                    print ("++++++++++++++++++++++++++++++++") 
-                    break
-
-            state = next_state
-            ENV.change_player()
+        env.print_board()
         
+        if done:
+            if reward == 100.0:
+                if env.current_player == "X":
+                    print("++++++++++++++++++++++++++++++++")
+                    print("Bot (X) Wins!" if SELECT_PLAYER == "2" else "YOU WIN")
+                else:
+                    print("++++++++++++++++++++++++++++++++")
+                    print("Bot (O) Wins!" if SELECT_PLAYER == "1" else "YOU WIN")
+                input("Press any key to retry, exit with Ctrl + C")
+                print("++++++++++++++++++++++++++++++++")
+                break
+            elif env.is_board_full():
+                print("++++++++++++++++++++++++++++++++")
+                print("TIE!")
+                input("Press any key to retry, exit with Ctrl + C")
+                print("++++++++++++++++++++++++++++++++")
+                break
+
+        state = next_state
+        env.change_player()
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Basic Tic Tac Toe using Reinforement Algorithm')
+    parser = argparse.ArgumentParser(description='Basic Tic Tac Toe using Reinforcement Algorithm')
     parser.add_argument('-a', help='Algorithm')
     parser.add_argument('-ep', help='Episode for training')
     args = parser.parse_args()
-    Agent = args.a
-    ep = args.ep
-    print("using : ",Agent)
-    train = trainer(Algorithm=Agent , episode= ep)
-    print ("=====================================")
+    Agent = args.a if args.a else 'DeepQLearning'
+    ep = int(args.ep) if args.ep else 100_000
+    print("using:", Agent)
+    train = Trainer(Algorithm=Agent, episode=ep)
+    print("=====================================")
     print("Start Training")
     train.train()
 
-    print ("=====================================")
-    while 1 : 
+    print("=====================================")
+    while True:
         SELECT_PLAYER = input("Select 1st or 2nd player (1/2): ")
-        play(train,SELECT_PLAYER)
+        play(train, SELECT_PLAYER)

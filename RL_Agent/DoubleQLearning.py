@@ -1,5 +1,6 @@
 import random
 import os
+import ast
 
 class DoubleQLearningAgent:
     def __init__(self, alpha=0.01, gamma=0.90, epsilon=0.01 , _max = 3):
@@ -13,6 +14,8 @@ class DoubleQLearningAgent:
         self.min_epsilon = epsilon # minimum exploration rate
         self.max = _max
         self.name = "DoubleQLearning"
+
+        self.Test = False
 
     #### Try to use decay_epsilon to reduce over estimated Q values
     def decay_epsilon(self , nstep , N):
@@ -30,12 +33,18 @@ class DoubleQLearningAgent:
         return Q
     
     def get_q_value(self, state, action):
+
+        if self.Test : return self.q_values1[(state, action)]
         if (state, action) in self.q_values1 and (state, action) in self.q_values2 :
             return self.q_values1[(state, action)] + self.q_values2[(state, action)]
         elif (state, action) in self.q_values1 : 
             return self.q_values1[(state, action)]
         elif (state, action) in self.q_values2 : 
             return self.q_values2[(state, action)]
+        else : 
+            self.q_values1[(state, action)] = 0
+            self.q_values2[(state, action)] = 0
+            return 0
 
     def get_q1_value(self, state, action):
         if (state, action) not in self.q_values1:
@@ -163,6 +172,8 @@ class DoubleQLearningAgent:
                 # Split the line into key and value using the colon as a delimiter
                 key, value = line.strip().split(": ")
                 # Update the loaded_dict with the key-value pair
-                loaded_dict[key] = value
+                key = ast.literal_eval(key)
+                loaded_dict[key] = float(value)
 
-        return loaded_dict
+        self.q_values1 = loaded_dict
+        print("Loaded Weight !!  ", self.name)

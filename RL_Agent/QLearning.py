@@ -2,6 +2,7 @@
 
 import random
 import os
+import ast
 
 class QLearningAgent:
     def __init__(self, alpha=0.01, gamma=0.90, epsilon=0.01 , _max = 3):
@@ -114,6 +115,8 @@ class QLearningAgent:
                 # Split the line into key and value using the colon as a delimiter
                 key, value = line.strip().split(": ")
                 # Update the loaded_dict with the key-value pair
-                loaded_dict[key] = value
+                key = ast.literal_eval(key)
+                loaded_dict[key] = float(value)
 
-        return loaded_dict
+        self.q_values = loaded_dict
+        print("Loaded Weight !!  ", self.name)
