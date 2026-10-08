@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tic Tac Toe with RL</title>
+  <meta name="description" content="Play tic tac toe against Q-Learning, SARSA and Double Q-Learning agents trained by self-play.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f6f8fb'/%3E%3Cpath d='M8 8l16 16M24 8L8 24' stroke='%232449c8' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="top">
+    <span class="logo">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8l16 16M24 8L8 24" /></svg>
+      Tic Tac Toe with RL
+    </span>
+
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button id="tab-play" role="tab" aria-controls="panel-play" aria-selected="true" type="button">Play</button>
+      <button id="tab-results" role="tab" aria-controls="panel-results" aria-selected="false" tabindex="-1" type="button">Results</button>
+      <button id="tab-learn" role="tab" aria-controls="panel-learn" aria-selected="false" tabindex="-1" type="button">How it learns</button>
+    </nav>
+
+    <div class="top-right">
+      <a class="icon-button" href="https://github.com/tanutb/TicTacToe_withRL" aria-label="Source code on GitHub">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
+      </a>
+      <button id="theme" class="icon-button" type="button" aria-label="Switch to dark mode">
+        <svg viewBox="0 0 24 24" aria-hidden="true"></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Play -->
+    <section id="panel-play" class="play" role="tabpanel" aria-labelledby="tab-play">
+      <div class="stage">
+        <div class="board-wrap">
+          <svg class="grid-lines" viewBox="0 0 300 300" aria-hidden="true">
+            <path d="M101 10 C99 100, 102 200, 100 290" />
+            <path d="M199 8 C201 110, 198 190, 200 292" />
+            <path d="M10 100 C100 101, 200 98, 290 100" />
+            <path d="M8 200 C110 198, 190 202, 292 199" />
+          </svg>
+          <div id="board" class="board" role="group" aria-label="Board"></div>
+          <svg id="strike" class="strike" viewBox="0 0 300 300" aria-hidden="true"></svg>
+        </div>
+
+        <p id="status" class="status" role="status" aria-live="polite">Loading the agents…</p>
+
+        <div class="actions">
+          <button id="new-game" class="button primary" type="button" title="New game (N)">New game</button>
+          <button id="undo" class="button" type="button" title="Undo (U)">Undo</button>
+          <button id="hint" class="button" type="button" title="Hint (H)">Hint</button>
+          <button id="step" class="button" type="button" title="Step (S)" hidden>Step</button>
+          <button id="autoplay" class="button" type="button" hidden>Play</button>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <div class="segmented mode" role="tablist" aria-label="Mode">
+          <button id="mode-play" role="tab" aria-selected="true" type="button">You vs agent</button>
+          <button id="mode-watch" role="tab" aria-selected="false" type="button">Agent vs agent</button>
+        </div>
+
+        <div id="play-controls" class="group">
+          <div class="field">
+            <span class="label" id="opponent-label">Opponent</span>
+            <div class="segmented" id="opponents" role="radiogroup" aria-labelledby="opponent-label"></div>
+            <p id="opponent-about" class="small"></p>
+          </div>
+          <div class="field">
+            <span class="label" id="side-label">You play</span>
+            <div class="segmented" role="radiogroup" aria-labelledby="side-label">
+              <label class="choice"><input type="radio" name="side" value="1" checked><span>X, first</span></label>
+              <label class="choice"><input type="radio" name="side" value="2"><span>O, second</span></label>
+            </div>
+          </div>
+          <label class="switch" id="random-start-row" hidden>
+            <input type="checkbox" id="random-start" checked><span>Agent's first X is random</span>
+          </label>
+        </div>
+
+        <div id="watch-controls" class="group" hidden>
+          <div class="matchup">
+            <label><span class="label">X</span><select id="watch-x"></select></label>
+            <label><span class="label">O</span><select id="watch-o"></select></label>
+          </div>
+          <label class="switch"><input type="checkbox" id="random-opening" checked><span>Random first move</span></label>
+          <label class="speed"><span class="label">Speed</span><input type="range" id="speed" min="0" max="4" step="1" value="2"></label>
+        </div>
+
+        <div class="field">
+          <label class="switch"><input type="checkbox" id="thinking"><span>Show the agent's Q-values</span></label>
+          <p id="thinking-note" class="small" hidden>How good each empty cell looks to the player about to move, from −1 (loses) to +1 (wins).</p>
+        </div>
+
+        <div class="score" aria-live="polite">
+          <div><b id="score-a">0</b><span id="score-a-label">You</span></div>
+          <div><b id="score-d">0</b><span>Draws</span></div>
+          <div><b id="score-b">0</b><span id="score-b-label">Agent</span></div>
+        </div>
+
+        <div class="log">
+          <div class="log-head">
+            <span class="label">Moves</span>
+            <button id="reset-score" class="link-button" type="button">Reset score</button>
+          </div>
+          <ol id="log"></ol>
+        </div>
+      </aside>
+    </section>
+
+    <!-- Results -->
+    <section id="panel-results" class="results" role="tabpanel" aria-labelledby="tab-results" hidden>
+      <div class="results-head">
+        <p class="lede">
+          Each algorithm trained for 1,000,000 games on 3 seeds, then played 10,000 games per seed
+          against a random player, an imperfect one (random 25% of the time) and a perfect one.
+        </p>
+        <div class="filters">
+          <div class="segmented small" role="group" aria-label="Opponent">
+            <button type="button" data-opponent="random" aria-pressed="true">vs random</button>
+            <button type="button" data-opponent="imperfect" aria-pressed="false">vs imperfect</button>
+            <button type="button" data-opponent="minimax" aria-pressed="false">vs perfect</button>
+          </div>
+          <div class="segmented small" role="group" aria-label="Agent side">
+            <button type="button" data-seat="X" aria-pressed="true">as X</button>
+            <button type="button" data-seat="O" aria-pressed="false">as O</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="results-grid">
+        <div class="card">
+          <h2>Final result</h2>
+          <div id="bars" class="bars"></div>
+          <p class="legend"><span><i class="win"></i>win</span><span><i class="draw"></i>draw</span><span><i class="loss"></i>loss</span></p>
+        </div>
+        <div class="card">
+          <h2>Win rate while training <span class="small">vs random</span></h2>
+          <svg id="curve" class="curve" viewBox="0 0 520 240" tabindex="0" role="img" aria-label="Learning curve"></svg>
+          <div id="curve-readout" class="readout"></div>
+        </div>
+      </div>
+
+      <ul id="facts" class="facts"></ul>
+      <p id="results-error" class="error" hidden></p>
+    </section>
+
+    <!-- How it learns -->
+    <section id="panel-learn" class="learn" role="tabpanel" aria-labelledby="tab-learn" hidden>
+      <ol class="loop" aria-label="One learning step">
+        <li>
+          <div class="mini" data-board="x...o...." aria-hidden="true"></div>
+          <div><b>See the board</b><span>The 9 cells are the state <i>s</i>.</span></div>
+        </li>
+        <li>
+          <div class="mini" data-board="x.X.o...." aria-hidden="true"></div>
+          <div><b>Pick a move</b><span>Highest Q-value, or a random one with chance ε.</span></div>
+        </li>
+        <li>
+          <div class="mini" data-board="xOx.o...." aria-hidden="true"></div>
+          <div><b>Opponent replies</b><span>Now it's the agent's turn again: state <i>s′</i>.</span></div>
+        </li>
+        <li>
+          <div class="rewards" aria-hidden="true"><span class="win">+1</span><span class="draw">0</span><span class="loss">−1</span></div>
+          <div><b>Update Q(s, a)</b><span>Win, draw or loss. Nothing in between, so moves learn from the end of the game.</span></div>
+        </li>
+      </ol>
+
+      <div class="learn-grid">
+        <div class="card">
+          <div class="card-head">
+            <h2>Update rule</h2>
+            <div class="segmented small" id="algo-pick" role="group" aria-label="Algorithm">
+              <button type="button" data-algo="QLearning" aria-pressed="true">Q-Learning</button>
+              <button type="button" data-algo="SARSA" aria-pressed="false">SARSA</button>
+              <button type="button" data-algo="DoubleQLearning" aria-pressed="false">Double Q</button>
+            </div>
+          </div>
+          <p id="algo-text"></p>
+          <div id="algo-formula" class="formula"></div>
+          <p id="algo-note" class="small"></p>
+        </div>
+
+        <div class="card">
+          <h2>Exploring vs using what it knows</h2>
+          <label class="progress">
+            <span class="label">Training progress <b id="progress-value">30%</b></span>
+            <input type="range" id="progress" min="0" max="100" step="1" value="30">
+          </label>
+          <div class="explore-bar" aria-hidden="true"><span id="explore-random"></span><span id="explore-best"></span></div>
+          <p id="explore-text" class="small"></p>
+          <dl class="settings">
+            <div><dt>Learning rate α</dt><dd>0.1</dd></div>
+            <div><dt>Discount γ</dt><dd>0.8</dd></div>
+            <div><dt>Exploration ε</dt><dd>1.0 → 0.2</dd></div>
+            <div><dt>Training games</dt><dd>1,000,000</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

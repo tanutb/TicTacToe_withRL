@@ -1,72 +1,76 @@
 import argparse
-from trainer import Trainer
+from pathlib import Path
+
+from trainer import ALGORITHMS, Trainer
 
 
-def play(trainer, SELECT_PLAYER='1'):
-    agents = (trainer.agent1, trainer.agent2)
+def print_board(state):
+    cells = [str(i + 1) if c == "0" else ("X" if c == "1" else "O") for i, c in enumerate(state)]
+    print()
+    for r in range(3):
+        print(" " + " | ".join(cells[r * 3:r * 3 + 3]))
+        if r < 2:
+            print("---+---+---")
+    print()
+
+
+def play(trainer, human="X"):
     env = trainer.env
     state = env.reset()
-
-    first = True
     while True:
-        print("Current Player:", env.current_player)
-        env.print_board()
-        print("++++++++++++++++++++++++++++++++")
-
-        if (SELECT_PLAYER == "1" and env.current_player == "X") or (SELECT_PLAYER == "2" and env.current_player == "O"):
-            action = int(input("Enter index (0-8): "))
-            row_index = action // 3
-            col_index = action % 3
-            player_action = (row_index, col_index)
-            reward, next_state, done = env.step(player_action)
-            print(f"Player ({env.current_player}) put in {player_action}")
+        print_board(state)
+        if env.current_player == human:
+            text = input(f"Your move ({human}), pick 1-9 or q to quit: ").strip().lower()
+            if text == "q":
+                return False
+            if not text.isdigit() or not 1 <= int(text) <= 9 or state[int(text) - 1] != "0":
+                print("That's not an empty cell, try again")
+                continue
+            action = divmod(int(text) - 1, 3)
         else:
-            if first and SELECT_PLAYER == "2":
-                print("+ I'll random for you +")
-                action = agents[0].get_random_action(state)
-                first = False
-            else:
-                action = agents[0].get_max_action(state) if env.current_player == "X" else agents[1].get_max_action(state)
-            reward, next_state, done = env.step(action)
-            print(f"Bot ({env.current_player}) put in {action}")
+            agent = trainer.agent1 if env.current_player == "X" else trainer.agent2
+            action = agent.get_max_action(state)
+            print(f"Bot ({env.current_player}) plays {action[0] * 3 + action[1] + 1}")
 
-        env.print_board()
-        
+        _, state, done = env.step(action)
         if done:
-            if reward == 100.0:
-                if env.current_player == "X":
-                    print("++++++++++++++++++++++++++++++++")
-                    print("Bot (X) Wins!" if SELECT_PLAYER == "2" else "YOU WIN")
-                else:
-                    print("++++++++++++++++++++++++++++++++")
-                    print("Bot (O) Wins!" if SELECT_PLAYER == "1" else "YOU WIN")
-                input("Press any key to retry, exit with Ctrl + C")
-                print("++++++++++++++++++++++++++++++++")
-                break
-            elif env.is_board_full():
-                print("++++++++++++++++++++++++++++++++")
+            print_board(state)
+            winner = env.check_winner()
+            if winner is None:
                 print("TIE!")
-                input("Press any key to retry, exit with Ctrl + C")
-                print("++++++++++++++++++++++++++++++++")
-                break
-
-        state = next_state
+            else:
+                print("YOU WIN" if winner == human else f"Bot ({winner}) wins!")
+            return True
         env.change_player()
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Basic Tic Tac Toe using Reinforcement Algorithm')
-    parser.add_argument('-a', help='Algorithm')
-    parser.add_argument('-ep', help='Episode for training')
-    args = parser.parse_args()
-    Agent = args.a if args.a else 'DeepQLearning'
-    ep = int(args.ep) if args.ep else 100_000
-    print("using:", Agent)
-    train = Trainer(Algorithm=Agent, episode=ep)
-    print("=====================================")
-    print("Start Training")
-    train.train()
 
-    print("=====================================")
-    while True:
-        SELECT_PLAYER = input("Select 1st or 2nd player (1/2): ")
-        play(train, SELECT_PLAYER)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Play Tic Tac Toe against a trained agent")
+    parser.add_argument("-a", "--algorithm", default="QLearning", choices=[*ALGORITHMS, "DeepQLearning"])
+    parser.add_argument("-ep", "--episodes", type=int, help="train a new agent first instead of loading save/")
+    parser.add_argument("--save-dir", default="save")
+    args = parser.parse_args()
+
+    trainer = Trainer(args.algorithm, args.episodes or 1)
+    if args.episodes:
+        print(f"Training {args.algorithm} for {args.episodes:,} episodes...")
+        trainer.train(verbose=True)
+        trainer.save(args.save_dir)
+    else:
+        ext = "pt" if args.algorithm == "DeepQLearning" else "json"
+        for agent in trainer.agents:
+            path = Path(args.save_dir) / f"{agent.name}.{ext}"
+            if not path.exists():
+                parser.error(f"{path} not found, train one first with -ep 100000")
+            agent.load(path)
+
+    try:
+        while True:
+            side = input("Play first (X) or second (O)? [X/o]: ").strip().upper() or "X"
+            if side not in ("X", "O"):
+                continue
+            if not play(trainer, side):
+                break
+    except (KeyboardInterrupt, EOFError):
+        pass
+    print("Bye!")

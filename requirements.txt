@@ -1,0 +1,2 @@
+matplotlib>=3.8   # only for plots.py / evaluate.py
+# torch           # only for DeepQLearning

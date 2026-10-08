@@ -1,3 +1,6 @@
-
-env/__pycache__/Environment.cpython-310.pyc
+__pycache__/
 *.pyc
+.venv/
+.ruff_cache/
+.ipynb_checkpoints/
+node_modules/
