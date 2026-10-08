@@ -90,19 +90,6 @@ To train the agent using SARSA for 50,000 episodes and then play against it:
 python play.py -a SARSA -ep 50000
 ```
 
-### Run the full evaluation
-```
-python evaluate.py
-```
-This trains every algorithm for 1,000,000 episodes on 3 seeds, which takes around 10 minutes. It then writes
-`save/`, `web/data/` and the charts in `img/`. Use `--episodes 10000 --seeds 0` for a quick run.
-
-### Tests
-```
-python -m unittest discover -s tests
-cd web && npm test
-```
-
 ## Evaluation
 
 Each algorithm was trained for **1,000,000 episodes** with 3 different seeds. Each trained agent then played
@@ -145,7 +132,7 @@ is **50.8% as X and 33.1% as O** (worked out exactly with expectimax over every 
 Making the win reward bigger doesn't help. With win = +3 the Double Q agent started losing to the perfect
 player (2.7% of games), because a risky move can look worth it. What does help is keeping some exploration
 until the end of training (epsilon 0.2). The agents keep seeing the opponent make mistakes and learn that
-setting traps pays off. The win and draw rewards are options in `trainer.py` if you want to try it yourself:
+setting traps pays off. The win and draw rewards are options in `trainer.py` if you want to try :
 
 ```
 python trainer.py -a QLearning -ep 300000 --win-reward 2 --draw-reward -0.2
@@ -169,14 +156,3 @@ Training 1,000,000 episodes takes about 26s (Q-Learning), 20s (SARSA) and 30s (D
   and still blocks when the position is already lost. With a discount close to 1, winning now and winning
   later look almost the same, and the agent sometimes skips an easy win or a block.
 - When playing (and in the demo) the agent always picks its best move. Ties go to the lowest cell.
-
-## Future Improvements
-
-- Bigger boards (4x4, 5x5 or connect-four), where a Q table gets too big and DQN starts to make sense
-- Tune and benchmark the Deep Q-Learning agent against the table agents
-- Train against a mix of opponents (random, imperfect, minimax), not only itself
-
-## References
-
-- Sutton & Barto, *Reinforcement Learning: An Introduction*, chapter 6 (SARSA, Q-Learning, Double Q-Learning)
-- [PyTorch DQN tutorial](https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html)
