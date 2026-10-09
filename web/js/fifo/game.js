@@ -1,4 +1,4 @@
-export const MAX_MOVES = 100;
+export const MAX_MOVES = 1000;
 export const LINES = [
   ...Array.from({ length: 4 }, (_, r) => Array.from({ length: 4 }, (_, c) => r * 4 + c)),
   ...Array.from({ length: 4 }, (_, c) => Array.from({ length: 4 }, (_, r) => r * 4 + c)),
