@@ -1,5 +1,7 @@
 """Train every algorithm on a few seeds, test them, and write the results.
 
+With --game fifo, evaluate the saved FIFO Deep Q-Learning model without retraining instead.
+
 Outputs:
     save/            seed 0 models (the ones play.py and the web demo use)
     web/data/        policies + evaluation.json for the web demo
@@ -210,6 +212,13 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--game", choices=["classic", "fifo"], default="classic")
+    parser.add_argument("--model", help="FIFO: checkpoint path, default save/fifo/DeepQLearning.pt")
+    parser.add_argument("--opponents", nargs="+", choices=["random", "tactical"], default=["random"], help="FIFO opponents; tactical uses one-reply lookahead, not perfect play")
+    parser.add_argument("--eval-seed", type=int, default=20261009, help="FIFO evaluation RNG seed")
+    parser.add_argument("--depth", type=int, default=3, help="FIFO: moves the agent looks ahead, as on the page (0 = network only)")
+    parser.add_argument("--output", help="FIFO detailed JSON report; default save/fifo/evaluation.json")
+    parser.add_argument("--no-export", action="store_true", help="FIFO: do not change the browser model or results")
     parser.add_argument("--episodes", type=int, default=1_000_000)
     parser.add_argument("--games", type=int, default=10_000, help="test games per seed / seat / opponent")
     parser.add_argument("--curve-games", type=int, default=500)
@@ -217,7 +226,16 @@ if __name__ == "__main__":
     parser.add_argument("--alpha", type=float, default=0.1)
     parser.add_argument("--gamma", type=float, default=0.8)
     parser.add_argument("--epsilon", type=float, default=0.2, help="exploration at the end of training")
-    parser.add_argument("--save-dir", default="save")
+    parser.add_argument("--save-dir", help="default: save for classic, save/fifo for FIFO")
     parser.add_argument("--web-dir", default="web")
     parser.add_argument("--img-dir", default="img")
-    main(parser.parse_args())
+    args = parser.parse_args()
+    if args.game == "fifo":
+        from fifo.cli import evaluate_main
+        try:
+            evaluate_main(args)
+        except (ValueError, TypeError, OSError) as error:
+            parser.error(str(error))
+    else:
+        args.save_dir = args.save_dir or "save"
+        main(args)

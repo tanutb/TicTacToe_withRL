@@ -8,7 +8,7 @@ import {
   legalMoves,
   move,
   result,
-} from "../game.js";
+} from "../js/classic/game.js";
 
 test("reject invalid, occupied, and post-terminal moves", () => {
   for (const i of [-1, 9, 1.5, null]) assert.throws(() => move(EMPTY, i));

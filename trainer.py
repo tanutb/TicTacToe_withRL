@@ -111,17 +111,38 @@ class Trainer:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train two agents by self-play")
-    parser.add_argument("-a", "--algorithm", default="QLearning", choices=[*ALGORITHMS, "DeepQLearning"])
+    parser.add_argument("--game", choices=["classic", "fifo"], default="classic")
+    parser.add_argument("-a", "--algorithm", default="QLearning", choices=[*ALGORITHMS, "DeepQLearning"],
+                        help="classic game only; FIFO always trains its Deep Q-Learning agent")
     parser.add_argument("-ep", "--episodes", type=int, default=100_000)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--save-dir", default="save")
+    parser.add_argument("--save-dir", help="default: save for classic, save/fifo for FIFO")
+    parser.add_argument("--alpha", type=float, help="learning rate (FIFO Deep Q default 3e-4)")
+    parser.add_argument("--gamma", type=float, help="discount (classic 0.8, FIFO Deep Q 0.9)")
+    parser.add_argument("--resume", action="store_true", help="FIFO: continue saved checkpoints; episodes are additional games")
+    parser.add_argument("--checkpoint-every", type=int, default=10000, help="FIFO checkpoint interval")
+    parser.add_argument("--curve-games", type=int, default=40, help="FIFO evaluation games per seat at checkpoints; 0 disables")
+    parser.add_argument("--web-dir", default="web", help="FIFO browser export directory")
+    parser.add_argument("--no-export", action="store_true", help="FIFO: save checkpoints without changing browser files")
+    parser.add_argument("--parallel", type=int, default=1024, help="FIFO: self-play games run side by side on the GPU")
     parser.add_argument("--epsilon", type=float, default=0.2, help="exploration at the end of training")
     parser.add_argument("--win-reward", type=float, default=1.0)
     parser.add_argument("--draw-reward", type=float, default=0.0)
     args = parser.parse_args()
 
-    trainer = Trainer(args.algorithm, args.episodes, args.seed, epsilon=args.epsilon,
+    if args.game == "fifo":
+        from fifo.cli import train_main
+        try:
+            train_main(args)
+        except (ValueError, TypeError, OSError) as error:
+            parser.error(str(error))
+        raise SystemExit(0)
+    if args.resume:
+        parser.error("--resume is available with --game fifo")
+
+    trainer = Trainer(args.algorithm, args.episodes, args.seed, alpha=args.alpha,
+                      gamma=0.8 if args.gamma is None else args.gamma, epsilon=args.epsilon,
                       win_reward=args.win_reward, draw_reward=args.draw_reward)
     trainer.train(verbose=True)
-    trainer.save(args.save_dir)
-    print(f"Trained {args.episodes:,} episodes in {trainer.seconds:.1f}s, saved to {args.save_dir}/")
+    trainer.save(args.save_dir or "save")
+    print(f"Trained {args.episodes:,} episodes in {trainer.seconds:.1f}s, saved to {args.save_dir or 'save'}/")

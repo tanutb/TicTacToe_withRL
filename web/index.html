@@ -9,14 +9,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <script type="module" src="app.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="module" src="js/classic/app.js"></script>
 </head>
 <body>
   <header class="top">
     <span class="logo">
       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8l16 16M24 8L8 24" /></svg>
-      Tic Tac Toe with RL
+      Tic Tac Toe<span class="logo-tail">&nbsp;with RL</span>
     </span>
 
     <nav class="tabs" role="tablist" aria-label="Sections">
@@ -26,6 +26,7 @@
     </nav>
 
     <div class="top-right">
+      <a class="text-link" href="fifo.html" target="_blank" rel="noopener">4×4 FIFO ↗</a>
       <a class="icon-button" href="https://github.com/tanutb/TicTacToe_withRL" aria-label="Source code on GitHub">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
       </a>
@@ -154,56 +155,100 @@
 
     <!-- How it learns -->
     <section id="panel-learn" class="learn" role="tabpanel" aria-labelledby="tab-learn" hidden>
-      <ol class="loop" aria-label="One learning step">
-        <li>
-          <div class="mini" data-board="x...o...." aria-hidden="true"></div>
-          <div><b>See the board</b><span>The 9 cells are the state <i>s</i>.</span></div>
-        </li>
-        <li>
-          <div class="mini" data-board="x.X.o...." aria-hidden="true"></div>
-          <div><b>Pick a move</b><span>Highest Q-value, or a random one with chance ε.</span></div>
-        </li>
-        <li>
-          <div class="mini" data-board="xOx.o...." aria-hidden="true"></div>
-          <div><b>Opponent replies</b><span>Now it's the agent's turn again: state <i>s′</i>.</span></div>
-        </li>
-        <li>
-          <div class="rewards" aria-hidden="true"><span class="win">+1</span><span class="draw">0</span><span class="loss">−1</span></div>
-          <div><b>Update Q(s, a)</b><span>Win, draw or loss. Nothing in between, so moves learn from the end of the game.</span></div>
-        </li>
-      </ol>
-
-      <div class="learn-grid">
-        <div class="card">
-          <div class="card-head">
-            <h2>Update rule</h2>
-            <div class="segmented small" id="algo-pick" role="group" aria-label="Algorithm">
-              <button type="button" data-algo="QLearning" aria-pressed="true">Q-Learning</button>
-              <button type="button" data-algo="SARSA" aria-pressed="false">SARSA</button>
-              <button type="button" data-algo="DoubleQLearning" aria-pressed="false">Double Q</button>
-            </div>
-          </div>
-          <p id="algo-text"></p>
-          <div id="algo-formula" class="formula"></div>
-          <p id="algo-note" class="small"></p>
+      <div class="learn-head">
+        <div>
+          <h2>How the agent learns</h2>
+          <p class="small">It keeps a <b>Q-table</b>: a score for every move on every board. Play one move and watch a score change.</p>
         </div>
-
-        <div class="card">
-          <h2>Exploring vs using what it knows</h2>
-          <label class="progress">
-            <span class="label">Training progress <b id="progress-value">30%</b></span>
-            <input type="range" id="progress" min="0" max="100" step="1" value="30">
-          </label>
-          <div class="explore-bar" aria-hidden="true"><span id="explore-random"></span><span id="explore-best"></span></div>
-          <p id="explore-text" class="small"></p>
-          <dl class="settings">
-            <div><dt>Learning rate α</dt><dd>0.1</dd></div>
-            <div><dt>Discount γ</dt><dd>0.8</dd></div>
-            <div><dt>Exploration ε</dt><dd>1.0 → 0.2</dd></div>
-            <div><dt>Training games</dt><dd>1,000,000</dd></div>
-          </dl>
+        <div class="segmented small" role="group" aria-label="Algorithm">
+          <button type="button" data-algo="QLearning" aria-pressed="true">Q-Learning</button>
+          <button type="button" data-algo="SARSA" aria-pressed="false">SARSA</button>
+          <button type="button" data-algo="DoubleQLearning" aria-pressed="false">Double Q</button>
         </div>
       </div>
+      <p id="learn-algo-note" class="algo-note"></p>
+
+      <div class="card lab">
+        <ol class="stepper" aria-label="Learning steps">
+          <li><button type="button" data-learn-step="0"><i>1</i><span>Look</span></button></li>
+          <li><button type="button" data-learn-step="1"><i>2</i><span>Choose</span></button></li>
+          <li><button type="button" data-learn-step="2"><i>3</i><span>Play</span></button></li>
+          <li><button type="button" data-learn-step="3"><i>4</i><span>Learn</span></button></li>
+        </ol>
+
+        <div class="lab-main">
+          <div class="lab-board">
+            <div id="learn-board" class="learn-board" role="group" aria-label="Example board"></div>
+            <p id="learn-board-note" class="who"></p>
+          </div>
+
+          <div class="lab-story">
+            <div aria-live="polite" aria-atomic="true">
+              <h3 id="learn-title"></h3>
+              <p id="learn-description" class="small"></p>
+            </div>
+
+            <div id="learn-choices" class="actions" hidden>
+              <button id="learn-best" class="button" type="button">Best score</button>
+              <button id="learn-random" class="button" type="button">Random</button>
+            </div>
+
+            <div id="learn-chips" class="chips" hidden></div>
+
+            <div id="learn-update" class="nudge" hidden>
+              <div class="nudge-values">
+                <div>old<b id="nudge-old"></b></div>
+                <span aria-hidden="true">→</span>
+                <div class="new">new<b id="nudge-new-value"></b></div>
+                <div class="target">target<b id="nudge-target-value"></b></div>
+              </div>
+              <div class="track" aria-hidden="true">
+                <span class="zero"></span>
+                <span id="nudge-gap" class="gap"></span>
+                <span id="nudge-moved" class="moved"></span>
+                <span id="nudge-old-point" class="pt old"></span>
+                <span id="nudge-target" class="pt target"></span>
+                <span id="nudge-new" class="pt new"></span>
+              </div>
+              <div class="ticks" aria-hidden="true"><span>−1 loses</span><span>0</span><span>+1 wins</span></div>
+              <p id="learn-tip" class="small"></p>
+              <p class="other small"><b class="o">O</b><span id="learn-other"></span></p>
+              <details class="math">
+                <summary>The math</summary>
+                <div>
+                  <div id="learn-formula" class="formula"></div>
+                  <p id="learn-calculation" class="calc"></p>
+                  <p class="small">α = 0.1 learning rate: how far to move. γ = 0.8 discount: future rewards count a bit less.</p>
+                </div>
+              </details>
+            </div>
+
+            <div class="learn-navigation">
+              <button id="learn-back" class="button" type="button">Back</button>
+              <button id="learn-next" class="button primary" type="button">Choose a move</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="qtable">
+          <div class="qtable-head">
+            <h3><span id="qtable-title">Q-table</span><span id="qtable-games" class="small"></span></h3>
+            <div class="actions">
+              <button id="learn-train" class="button small" type="button">Fast-forward</button>
+              <button id="learn-reset" class="link-button" type="button">Reset</button>
+            </div>
+          </div>
+          <div class="qtable-scroll">
+            <table>
+              <thead><tr id="qtable-head"><th scope="col"><span class="sr-only">Who</span></th></tr></thead>
+              <tbody id="qtable-body"></tbody>
+            </table>
+          </div>
+          <p class="small">Each row is a board, each column a square. The trained agents know <span id="qtable-boards">thousands of</span> boards.</p>
+        </div>
+      </div>
+
+      <p class="settings-strip small">Real training: α 0.1 · γ 0.8 · ε 1.0 → 0.2 (random moves fade out) · 1,000,000 games of self-play</p>
     </section>
   </main>
 </body>

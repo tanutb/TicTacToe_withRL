@@ -1,4 +1,8 @@
 import { EMPTY, chooseAction, move, result, turn, winningLine } from "./game.js";
+import { START, initLearning } from "./learning.js";
+import { markSvg } from "../shared/marks.js";
+import { initTabs } from "../shared/tabs.js";
+import { initTheme } from "../shared/theme.js";
 
 const NAMES = { QLearning: "Q-Learning", SARSA: "SARSA", DoubleQLearning: "Double Q-Learning" };
 const SHORT_NAMES = { QLearning: "Q-Learning", SARSA: "SARSA", DoubleQLearning: "Double Q" };
@@ -11,9 +15,6 @@ const CELL_NAMES = ["top left", "top", "top right", "left", "centre", "right", "
 const MARK = { 1: "X", 2: "O" };
 const SPEEDS = [1400, 1000, 650, 350, 120]; // ms per move in agent vs agent
 
-// hand drawn marks, viewBox 0 0 100 100
-const X_PATHS = ['M24 23 C40 40, 58 60, 77 78', 'M76 22 C60 41, 43 58, 23 79'];
-const O_PATH = "M50 18 C71 17, 83 33, 82 51 C81 70, 66 83, 48 82 C29 81, 18 66, 19 48 C21 30, 34 19, 55 21";
 
 const $ = (sel) => document.querySelector(sel);
 const policies = {};
@@ -42,13 +43,6 @@ function store(key, value) {
   } catch {
     return null;
   }
-}
-
-function markSvg(player, extraClass = "") {
-  const paths = player === "1"
-    ? X_PATHS.map((d, i) => `<path pathLength="1" d="${d}" style="--delay:${i * 0.1}s"/>`).join("")
-    : `<path pathLength="1" d="${O_PATH}"/>`;
-  return `<svg viewBox="0 0 100 100" class="${extraClass}" aria-hidden="true">${paths}</svg>`;
 }
 
 // Double Q plays on Q1 + Q2. Show the average so every algorithm uses the same -1..+1 scale.
@@ -253,9 +247,9 @@ function render() {
       if (value !== "0") {
         // you vs agent: you write in ink, the agent in pencil. agent vs agent: X ink, O pencil
         const byYou = game.mode === "play" ? value === game.human : value === "1";
-        mark.innerHTML = markSvg(value, `${byYou ? "ink" : "pencil"} drawn`);
+        mark.innerHTML = markSvg(value === "1", `${byYou ? "ink" : "pencil"} drawn`);
       } else {
-        mark.innerHTML = humanTurn ? markSvg(game.human, "ghost") : "";
+        mark.innerHTML = humanTurn ? markSvg(game.human === "1", "ghost") : "";
       }
       shown[i] = want;
     }
@@ -441,7 +435,7 @@ $("#reset-score").addEventListener("click", () => {
 });
 
 document.addEventListener("keydown", (e) => {
-  if (e.ctrlKey || e.metaKey || e.altKey || activeTab !== "play") return;
+  if (e.ctrlKey || e.metaKey || e.altKey || tabs.active !== "play") return;
   if (e.target.matches("select, textarea, input[type=text], [role=tab]")) return;
   const key = e.key.toLowerCase();
   if (key >= "1" && key <= "9") clickCell(Number(key) - 1);
@@ -451,50 +445,9 @@ document.addEventListener("keydown", (e) => {
   else if (key === "s") step();
 });
 
-// theme
-const MOON = '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>';
-const SUN = '<circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
-// light by default, dark only if you picked it
-let theme = store("ttt-theme") === "dark" ? "dark" : "light";
-function setTheme(value) {
-  theme = value;
-  document.documentElement.dataset.theme = value;
-  $("#theme").setAttribute("aria-label", value === "dark" ? "Switch to light mode" : "Switch to dark mode");
-  $("#theme svg").innerHTML = value === "dark" ? SUN : MOON;
-}
-setTheme(theme);
-$("#theme").addEventListener("click", () => {
-  setTheme(theme === "dark" ? "light" : "dark");
-  store("ttt-theme", theme);
-});
+initTheme();
 
-// tabs: Play / Results / How it learns
-const TABS = ["play", "results", "learn"];
-let activeTab = "play";
-function showTab(name) {
-  if (!TABS.includes(name)) name = "play";
-  activeTab = name;
-  for (const tab of TABS) {
-    const selected = tab === name;
-    $(`#tab-${tab}`).setAttribute("aria-selected", selected);
-    $(`#tab-${tab}`).tabIndex = selected ? 0 : -1;
-    $(`#panel-${tab}`).hidden = !selected;
-  }
-}
-TABS.forEach((tab, i) => {
-  const button = $(`#tab-${tab}`);
-  button.addEventListener("click", () => {
-    history.replaceState(null, "", `#${tab}`);
-    showTab(tab);
-  });
-  button.addEventListener("keydown", (e) => {
-    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-    const next = TABS[(i + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length];
-    $(`#tab-${next}`).focus();
-    $(`#tab-${next}`).click();
-  });
-});
-showTab(location.hash.slice(1));
+const tabs = initTabs(["play", "results", "learn"]);
 
 // ---------- results section ----------
 
@@ -645,59 +598,11 @@ async function loadJson(path) {
 
 // ---------- how it learns tab ----------
 
-const ALGO_INFO = {
-  QLearning: {
-    text: "Moves Q(s, a) toward the reward plus the best Q-value it could get on its next turn, even if it won't actually play that move.",
-    formula: "Q(s,a) ← Q(s,a) + α [ r + γ <mark>max<sub>a′</sub> Q(s′,a′)</mark> − Q(s,a) ]",
-    note: "Off-policy: it learns the best way to play while it is still exploring.",
-  },
-  SARSA: {
-    text: "Uses the Q-value of the move it really plays next, random moves included. The name is the five things it needs: s, a, r, s′, a′.",
-    formula: "Q(s,a) ← Q(s,a) + α [ r + γ <mark>Q(s′,a′)</mark> − Q(s,a) ]",
-    note: "On-policy: it knows it sometimes plays a random move, so it learns to play a bit safer.",
-  },
-  DoubleQLearning: {
-    text: "Keeps two tables. Each update, one table picks the best next move and the other one gives its value.",
-    formula: "Q₁(s,a) ← Q₁(s,a) + α [ r + γ <mark>Q₂(s′, argmax<sub>a′</sub> Q₁(s′,a′))</mark> − Q₁(s,a) ]",
-    note: "One table on its own tends to overrate moves. Splitting the job cancels that out. It plays with Q₁ + Q₂.",
-  },
-};
-
-function showAlgo(name) {
-  const info = ALGO_INFO[name];
-  document.querySelectorAll("[data-algo]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.algo === name));
-  $("#algo-text").textContent = info.text;
-  $("#algo-formula").innerHTML = info.formula;
-  $("#algo-formula").style.setProperty("--accent", `var(--c-${name})`);
-  $("#algo-note").textContent = info.note;
-}
-document.querySelectorAll("[data-algo]").forEach((b) => b.addEventListener("click", () => showAlgo(b.dataset.algo)));
-showAlgo("QLearning");
-
-function showExploration() {
-  // same schedule as the Python agents: 1.0 down to 0.2 over the first 80% of training
-  const progress = Number($("#progress").value) / 100;
-  const epsilon = 0.2 + 0.8 * Math.max(0, 1 - progress / 0.8);
-  const random = Math.round(epsilon * 100);
-  $("#progress-value").textContent = `${Math.round(progress * 100)}%`;
-  $("#explore-random").style.flex = `0 0 ${random}%`;
-  $("#explore-best").style.flex = `0 0 ${100 - random}%`;
-  $("#explore-random").textContent = random >= 18 ? "random" : "";
-  $("#explore-best").textContent = random <= 82 ? "best move" : "";
-  $("#explore-text").textContent = `ε = ${epsilon.toFixed(2)}: ${random}% of moves are random, ${100 - random}% use the best Q-value.`;
-}
-$("#progress").addEventListener("input", showExploration);
-showExploration();
-
-document.querySelectorAll(".mini").forEach((mini) => {
-  for (const c of mini.dataset.board) {
-    const cell = document.createElement("i");
-    if (c !== ".") {
-      cell.textContent = c.toLowerCase() === "x" ? "×" : "○";
-      cell.className = (c.toLowerCase() === "x" ? "x" : "o") + (c === c.toUpperCase() ? " new" : "");
-    }
-    mini.append(cell);
-  }
+// the trained agent's real Q-values for the example board, once the policies have loaded
+const learning = initLearning((algorithm) => {
+  const policy = policies[algorithm];
+  const entry = policy?.states[START];
+  return entry ? { values: entry.values.map((v) => displayQ(algorithm, v)), boards: Object.keys(policy.states).length } : null;
 });
 
 async function start() {
@@ -710,6 +615,7 @@ async function start() {
     await Promise.all(Object.keys(NAMES).map(async (name) => (policies[name] = await loadJson(`data/${name}.json`))));
     game.ready = true;
     newGame();
+    learning.render();
   } catch (err) {
     showError(`Couldn't load the agents (${err.message}). Start the demo with "python demo.py", opening index.html directly won't work.`);
   }

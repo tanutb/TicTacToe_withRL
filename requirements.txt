@@ -1,2 +1,2 @@
 matplotlib>=3.8   # only for plots.py / evaluate.py
-# torch           # only for DeepQLearning
+# torch           # only for DeepQLearning and the 4x4 FIFO agent

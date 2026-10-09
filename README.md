@@ -1,158 +1,167 @@
-# Reinforcement Learning with Tic Tac Toe
+# Tic Tac Toe with RL
 
-TicTacToe_withRL teaches agents to play Tic Tac Toe with basic reinforcement learning algorithms.
-I built it as a practical exercise for understanding RL. Two agents (one X, one O) play against each other
-and learn from their wins, losses and draws.
-
-You can play against the trained agents in the browser, and turn on "show what the agent is thinking"
-to see the Q-value it gives each cell.
+Agents that learn Tic Tac Toe by self-play, with a browser demo to play against them.
 
 <img src="img/demo.png" alt="Web demo, playing against Q-Learning with the agent's Q-values shown on the board">
 
-## Algorithms
+| | Classic 3×3 | 4×4 FIFO |
+| --- | --- | --- |
+| Rules | three in a row | four in a line; each player keeps 4 marks, a 5th removes the oldest; draw after 100 moves |
+| Agents | Q-Learning, SARSA, Double Q-Learning (tables) | Deep Q-Learning + 3-move look-ahead |
+| Training | 1,000,000 games each | 2,000,000 games |
+| Result | never loses; draws perfect play | never loses (0 of 100,000 test games) |
+| Page | `web/index.html` | `web/fifo.html` |
 
-### SARSA (State-Action-Reward-State-Action)
-SARSA is an on-policy RL algorithm. It updates its Q-values using the action actually taken by the policy,
-not the action that maximizes the Q-value. This makes SARSA more conservative.
+## Quick start
 
-### Q-Learning
-Q-Learning is an off-policy RL algorithm. It learns a Q-function that estimates the total reward from
-taking an action in a state and then playing the best moves after that.
+```
+pip install -r requirements.txt   # matplotlib, for the charts
+pip install torch                 # only to train / evaluate FIFO
+python demo.py                    # opens http://127.0.0.1:8000
+```
 
-### Double Q-Learning
-Double Q-Learning addresses the overestimation bias of Q-Learning by keeping two Q tables. One table picks
-the next action and the other one gives its value.
+Both pages have three tabs:
 
-### Deep Q-Learning (optional)
-A small neural network in place of the table, with a replay buffer and a target network. It needs PyTorch and
-isn't part of the evaluation below.
+- **Play**: you vs agent or agent vs agent, show the agent's scores, hint, undo.
+- **Results**: win / draw / loss per opponent and the training curve.
+- **How it learns / How it works**: interactive step-by-step walkthrough.
+
+Keyboard (3×3): `1`-`9` play a cell, `N` new game, `U` undo, `H` hint.
+`web/` is static and can be hosted as-is (e.g. GitHub Pages).
 
 ## Project structure
 
 ```
-├── env/Environment.py      game rules
-├── RL_Agent/
-│   ├── tabular.py          shared code for the table agents (epsilon-greedy, save/load)
-│   ├── QLearning.py
-│   ├── SARSA.py
-│   ├── DoubleQLearning.py
-│   └── DeepQLearning.py
-├── trainer.py              self-play training
-├── play.py                 play in the terminal
-├── evaluate.py             train all algorithms, test them, write results + charts
-├── plots.py                charts for this README
-├── evaluate.ipynb          look at the results
-├── demo.py                 start the web demo
-├── save/                   trained models (1,000,000 episodes, seed 0)
-├── web/                    web demo (HTML/CSS/JS, no build step)
-├── img/                    images used in this README
-└── tests/
+├── env/Environment.py   3×3 rules
+├── RL_Agent/            3×3 agents: tabular.py, QLearning.py, SARSA.py, DoubleQLearning.py, DeepQLearning.py
+├── trainer.py           train (add --game fifo for FIFO)
+├── evaluate.py          test + results (add --game fifo for FIFO)
+├── play.py              play 3×3 in the terminal
+├── plots.py             README charts
+├── evaluate.ipynb       results notebook
+├── demo.py              start the web demo
+├── fifo/                4×4 FIFO: game.py (rules), dqn.py (Deep Q agent), cli.py, style.py
+├── save/                3×3 models; save/fifo/ FIFO model
+├── web/                 browser demo (no build step), published to GitHub Pages
+│   ├── index.html       3×3 page
+│   ├── fifo.html        4×4 FIFO page
+│   ├── css/             styles.css (shared), fifo.css
+│   ├── js/shared/       tabs, theme, hand-drawn marks
+│   ├── js/classic/      3×3 game, app, learning walkthrough
+│   ├── js/fifo/         4×4 game, network + look-ahead, Play / Results / How it works tabs
+│   ├── data/            trained models and results the pages load
+│   └── tests/           JavaScript tests (not published)
+├── img/                 README images
+├── tests/               Python tests
+└── .github/workflows/   GitHub Pages deploy
 ```
 
-## Usage
+## Classic 3×3
 
-Needs Python 3.10+. Training and playing only use the standard library.
+### Commands
 
 ```
-pip install -r requirements.txt     # matplotlib, only needed for the charts
-```
-
-### Play in the browser
-```
-python demo.py
-```
-This opens http://127.0.0.1:8000. You can:
-- play as X or O against Q-Learning, SARSA or Double Q-Learning (when you play O the agent opens with a random move, so games differ)
-- turn on **Show the agent's Q-values** to see how good every empty cell looks to the agent
-- use **Hint** to ask the agent what it would play in your place, and **Undo** to take a move back
-- watch two agents play each other in **Agent vs agent**
-- explore the results and the learning curve
-
-Keyboard: `1`-`9` to play a cell, `N` new game, `U` undo, `H` hint.
-The `web/` folder is static, so you can also host it on GitHub Pages as it is.
-
-### Play in the terminal
-```
-python play.py -a {Algorithm_name}
-python play.py -a {Algorithm_name} -ep {Training_episode}
-```
-- {Algorithm_name}: `QLearning`, `SARSA`, `DoubleQLearning` or `DeepQLearning`
-- {Training_episode}: train a new agent for this many episodes first. Without it the model in `save/` is loaded.
-
-### Train
-```
+python play.py -a QLearning               # QLearning | SARSA | DoubleQLearning | DeepQLearning
+python play.py -a SARSA -ep 50000         # train first, then play
 python trainer.py -a QLearning -ep 100000
+python evaluate.py                        # train all, test, write charts
 ```
 
-### Example
-To train the agent using SARSA for 50,000 episodes and then play against it:
-```
-python play.py -a SARSA -ep 50000
-```
+### Algorithms
 
-## Evaluation
+- **Q-Learning**: learns from the best next move (off-policy).
+- **SARSA**: learns from the move actually played next (on-policy, more careful).
+- **Double Q-Learning**: two tables, one picks the next move, the other scores it.
+- **Deep Q-Learning** (optional, PyTorch): small network, replay buffer, target network. Not in the results.
 
-Each algorithm was trained for **1,000,000 episodes** with 3 different seeds. Each trained agent then played
-**10,000 games** per seed against three opponents:
-- **random**: every move is random
-- **imperfect**: plays perfectly but makes a random move 25% of the time, a bit like a decent human
-- **perfect**: minimax, can't be beaten
+### Results
 
-Win rate (no game was lost against any opponent):
+1,000,000 training games × 3 seeds, then 10,000 test games per seed.
+Opponents: **random**, **imperfect** (perfect play, 25% random moves), **perfect** (minimax).
 
-| Algorithm | Agent plays | vs random | vs imperfect | vs perfect |
+| Algorithm | Plays | vs random | vs imperfect | vs perfect |
 | --- | --- | ---: | ---: | ---: |
-| Q-Learning | X (first) | 99.08% | 48.02% | 0% (all draws) |
-| Q-Learning | O (second) | 91.53% | 33.04% | 0% (all draws) |
-| SARSA | X (first) | 99.01% | 49.66% | 0% (all draws) |
-| SARSA | O (second) | 89.25% | 31.64% | 0% (all draws) |
-| Double Q-Learning | X (first) | 98.80% | 48.98% | 0% (all draws) |
-| Double Q-Learning | O (second) | 92.09% | 33.21% | 0% (all draws) |
+| Q-Learning | X | 99.08% | 48.02% | all draws |
+| Q-Learning | O | 91.53% | 33.04% | all draws |
+| SARSA | X | 99.01% | 49.66% | all draws |
+| SARSA | O | 89.25% | 31.64% | all draws |
+| Double Q-Learning | X | 98.80% | 48.98% | all draws |
+| Double Q-Learning | O | 92.09% | 33.21% | all draws |
+
+- No agent lost a game. Agent vs agent: 27/27 draws.
+- Best possible vs imperfect without risking a loss: 50.8% as X, 33.1% as O (exact expectimax).
+- On every board, every agent takes a win and blocks a threat unless already lost (`tests/test_core.py`).
+- Training takes 20–30 s per 1,000,000 games on a laptop CPU.
 
 <img src="img/results.png" alt="Win rate against a random player">
-
-- None of the agents lost a single game.
-- Against the perfect player every game is a draw. Tic Tac Toe is a draw when both sides play well,
-  so nobody can do better than that.
-- The first player wins more often, because X gets to place first.
-- When the agents play each other, all 27 games ended in a draw.
-- The three algorithms end up very close. Tic Tac Toe is small enough that all of them learn a near-perfect policy.
-- On every possible board, all three agents take a win when there is one, and block a threat unless the
-  game is already lost anyway (checked in `tests/test_core.py`).
-
 <img src="img/outcomes.png" alt="Win, draw and loss against random, imperfect and perfect players">
-
-### Why does it draw so much?
-
-Against anyone who doesn't blunder, Tic Tac Toe always ends in a draw, so a good agent can only win when the
-opponent makes a mistake. Against the imperfect player, the most you can win without ever risking a loss
-is **50.8% as X and 33.1% as O** (worked out exactly with expectimax over every board). The agents get
-48-50% and 32-33%, so they are already at, or very close to, that limit.
-
-Making the win reward bigger doesn't help. With win = +3 the Double Q agent started losing to the perfect
-player (2.7% of games), because a risky move can look worth it. What does help is keeping some exploration
-until the end of training (epsilon 0.2). The agents keep seeing the opponent make mistakes and learn that
-setting traps pays off. The win and draw rewards are options in `trainer.py` if you want to try :
-
-```
-python trainer.py -a QLearning -ep 300000 --win-reward 2 --draw-reward -0.2
-```
-
-The learning curve shows most of the learning happens in the first 100,000 episodes:
-
 <img src="img/learning_curves.png" alt="Learning curves">
 
-Training 1,000,000 episodes takes about 26s (Q-Learning), 20s (SARSA) and 30s (Double Q-Learning) on a laptop CPU.
+### Training settings
 
-## How training works
+| Setting | Value |
+| --- | --- |
+| Rewards | win +1, loss −1, draw 0 |
+| Learning rate / discount | 0.1 / 0.8 |
+| Exploration ε | 1.0 → 0.2 over the first 80% |
+| Update | after the opponent replies; only empty cells count |
+| Options | `--win-reward`, `--draw-reward`, `--epsilon`, `--alpha`, `--gamma` |
 
-- Two agents play each other, one always X and one always O.
-- A move is updated once the same player is about to move again, so the next state is the board after
-  the opponent has replied. Only empty cells count when looking at the next move.
-- Rewards: win +1, loss -1, draw 0 for both players. Nothing in between.
-- Exploration (epsilon) goes from 1.0 down to 0.2 over the first 80% of the episodes.
-- Learning rate 0.1, discount factor 0.8. A low discount makes winning now clearly worth more than
-  winning later, and losing later better than losing now. So the agent always takes a win straight away
-  and still blocks when the position is already lost. With a discount close to 1, winning now and winning
-  later look almost the same, and the agent sometimes skips an easy win or a block.
-- When playing (and in the demo) the agent always picks its best move. Ties go to the lowest cell.
+## 4×4 FIFO
+
+### Rules
+
+- Four in a row, column or full diagonal wins.
+- Each player keeps 4 marks; a 5th mark removes that player's oldest first.
+- The oldest mark's square can't be chosen until it's gone.
+- Draw after 100 moves.
+
+### Agent
+
+| Part | Value |
+| --- | --- |
+| Input | 129 numbers: each side's marks in 4 grids by turns until removed, + moves left |
+| Network | 129 → 256 → 256 → 16 (ReLU), 103,184 weights, one score per square |
+| Training | self-play, one network for X and O, Double DQN, replay buffer, target network, 8 board symmetries |
+| Target | score a move on the same player's next turn: ±1 / 0 at game end, else 0.9 × best score |
+| Exploration | ε 1.0 → 0.2 over the first half (opponent slips, so traps pay off) |
+| Play | 3-move look-ahead (all moves, replies, next moves), network judges the end positions |
+
+### Results
+
+2,000,000 training games (18 min on an RTX 4070 SUPER). 10,000 test games as X + 10,000 as O, with look-ahead:
+
+| Opponent | Wins | Draws | Losses |
+| --- | ---: | ---: | ---: |
+| random | 20,000 | 0 | 0 |
+| tactical (takes wins, avoids handing one over) | 20,000 | 0 | 0 |
+| human-like (itself, 10% random moves) | 13,817 | 6,183 | 0 |
+| itself | 0 | 20,000 | 0 |
+
+- 0 losses in 20,000 more games vs other strong networks searching 2–3 moves.
+- Perfect play draws, as in 3×3.
+- A Q-table can't learn FIFO: after 400,000 games it played like random.
+
+### Commands
+
+```
+python trainer.py --game fifo -ep 2000000 --checkpoint-every 250000 --curve-games 500
+python trainer.py --game fifo -ep 200000 --resume
+python evaluate.py --game fifo --games 10000 --opponents random tactical --depth 3
+python -m fifo.style --games 2000 --depth 3
+```
+
+| Output | Path |
+| --- | --- |
+| Model | `save/fifo/DeepQLearning.pt` |
+| Detailed report | `save/fifo/evaluation.json` |
+| Browser model / results | `web/data/FIFO-DeepQLearning.json`, `web/data/fifo-evaluation.json` |
+
+Options: `--alpha` (3e-4), `--gamma` (0.9), `--epsilon` (0.2), `--parallel` (1024), `--seed`, `--depth` (0–4), `--no-export`, `--save-dir`, `--web-dir`, `--model`, `--output`.
+
+## Tests
+
+```
+node --test web/tests/*.test.js
+python -m unittest discover -s tests          # FIFO Deep Q tests need PyTorch
+```
