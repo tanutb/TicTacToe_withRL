@@ -23,7 +23,7 @@ function curve(points, episodes) {
   const y = (v) => 14 + (1 - v) * 186;
   const line = points.map((p, i) => `${i ? "L" : "M"}${x(p).toFixed(1)} ${y(rate(p)).toFixed(1)}`).join(" ");
   const grid = [0, 0.25, 0.5, 0.75, 1].map((v) => `<line x1="44" x2="510" y1="${y(v)}" y2="${y(v)}"/><text x="36" y="${y(v) + 4}" text-anchor="end">${v * 100}%</text>`).join("");
-  const ticks = [0, episodes / 2, episodes].map((e) => `<text x="${x({ episodes: e })}" y="226" text-anchor="middle">${e ? `${e / 1000}k` : "0"}</text>`).join("");
+  const ticks = [0, episodes / 2, episodes].map((e) => `<text x="${x({ episodes: e })}" y="226" text-anchor="middle">${e ? e >= 1e6 ? `${e / 1e6}m` : `${e / 1000}k` : "0"}</text>`).join("");
   return `<svg class="curve" viewBox="0 0 520 236" role="img" aria-label="Win rate against the tactical player at training checkpoints: ${points.map((p) => `${p.episodes.toLocaleString()} games ${pct(rate(p))}`).join("; ")}"><g class="axis">${grid}${ticks}</g><path class="series" d="${line}" style="stroke: var(--ink)"/>${points.map((p) => `<circle cx="${x(p)}" cy="${y(rate(p))}" r="4" style="fill: var(--ink)"/>`).join("")}</svg>`;
 }
 
@@ -34,7 +34,7 @@ export function render(data) {
   const minutes = data.seconds ? ` in ${Math.max(1, Math.round(data.seconds / 60))} minutes on a GPU` : "";
   const stats = (row) => `<div><dt>Moves per game</dt><dd>${row.moves.toFixed(0)}</dd></div><div><dt>Threats per 10 moves</dt><dd>${row.threats.toFixed(1)}</dd></div><div><dt>Aging traps per 10 moves</dt><dd>${row.traps.toFixed(2)}</dd></div><div><dt>Wins from a trap</dt><dd>${pct(row.trapWins)}</dd></div>`;
   return `
-    <p class="lede">Deep Q-Learning trained by self-play for ${data.episodes.toLocaleString()} games${minutes}. ${data.depth ? `It looks ${data.depth} moves ahead, as on the Play tab. ` : ""}Each result is ${games.toLocaleString()} test games, half as X and half as O. A draw means the ${data.maxMoves}-move limit was reached.</p>
+    <p class="lede">Self-play: ${data.episodes.toLocaleString()} games${minutes}. ${data.depth ? `Agent looks ${data.depth} moves ahead. ` : ""}${games.toLocaleString()} tests per opponent, split equally as X/O · ${data.maxMoves}-move draw limit.</p>
     <div class="results-grid">
       <div class="card">
         <h2>Final result</h2>
@@ -46,18 +46,18 @@ export function render(data) {
         ${(data.curve ?? []).length > 1 ? curve(data.curve, data.episodes) : `<p class="small">No training checkpoints were recorded.</p>`}
       </div>
     </div>
-    ${style.sloppy ? `<div class="card">
-      <h2>How it plays</h2>
-      <p class="small">Against the human-like opponent. A threat means it could win on its next move if not blocked. An aging trap is a threat the opponent cannot block, because the blocking mark is their oldest and is about to vanish.</p>
+    ${style.sloppy ? `<div class="card fifo-behavior">
+      <h2>How it plays <span class="small">vs human-like</span></h2>
       <dl class="settings fifo-style">${stats(style.sloppy)}</dl>
+      <p class="small">Threat = a win next turn. Aging trap = a block that disappears.</p>
       ${style.self ? `<p class="small">${style.self.wins + style.self.losses === 0
-    ? "Agent vs agent: every game is a draw. Neither side ever slips, like two perfect 3×3 players."
+    ? "Agent vs agent: every game is a draw in these tests."
     : `Agent vs agent (random first move): ${pct((style.self.wins + style.self.losses) / (style.self.wins + style.self.draws + style.self.losses))} of games end in a win, after ${style.self.moves.toFixed(0)} moves on average.`}</p>` : ""}
     </div>` : ""}
     <ul class="facts">
-      <li><b>Random</b> picks any empty square.</li>
-      <li><b>Tactical</b> takes any immediate win, otherwise picks a move that leaves the fewest immediate winning replies. It does not see aging traps coming.</li>
-      ${style.sloppy ? "<li><b>Human-like</b> is the agent itself making a random move 10% of the time: strong, but it slips.</li>" : ""}
+      <li><b>Random</b> any empty square.</li>
+      <li><b>Tactical</b> wins now or limits immediate threats.</li>
+      ${style.sloppy ? "<li><b>Human-like</b> agent with 10% random moves.</li>" : ""}
     </ul>`;
 }
 

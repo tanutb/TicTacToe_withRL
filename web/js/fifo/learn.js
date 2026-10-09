@@ -1,5 +1,6 @@
 import { LINES, MAX_MOVES, boardOf, initialState, legalMoves, playMove } from "./game.js";
-import { DEPTH, activations, moveValues } from "./dqn.js";
+import { DEPTH, activations } from "./dqn.js";
+import { createSearch } from "./search.js";
 import { ghost, pieceHtml, pieceLabel } from "./piece.js";
 
 // The rules steps. X moves first, so a position with X to move has equal move counts.
@@ -36,8 +37,8 @@ export const LESSONS = [
 export const QUIZ = { queues: [[13, 0, 5, 6], [3, 8, 9, 10]], player: 0, moves: 8, target: 11 };
 
 const MODEL_STEPS = [
-  { label: "Inputs", title: "What the network sees", text: "The board becomes 129 numbers: one 4×4 grid per player and per turns left, plus the moves left. Point at a mark to find it." },
-  { label: "Network", title: "Inside the network", text: "Two layers of 256 neurons turn the 129 numbers into one score per square. Brighter neurons fired more for this board." },
+  { label: "Inputs", title: "What the network sees", text: "Eight grids track marks and their ages. Hover over a mark to find it below." },
+  { label: "Network", title: "Inside the network", text: "129 inputs → two hidden layers → one score per square. Darker blue means a stronger signal." },
   { label: "Look-ahead", title: `Look ${DEPTH} moves ahead`, text: "" },
   { label: "Training", title: "How it learned", text: "" },
 ];
@@ -85,7 +86,7 @@ function inputsView(state) {
   const row = (s) => `<div class="plane-row"><span class="plane-who"><b class="${who[s] ? "fifo-o" : "fifo-x"}">${who[s] ? "O" : "X"}</b>${s ? "" : " to move"}</span>${
     grid.slice(s * 4, s * 4 + 4).map((cells, k) => `<figure>${planeGrid(cells, who[s] ? "o" : "x")}<figcaption>${PLANE_NAMES[k]}</figcaption></figure>`).join("")}</div>`;
   const left = MAX_MOVES - state.moves;
-  return `<div class="planes">${row(0)}${row(1)}<div class="plane-left"><span>Moves left</span><div class="meter"><span style="width:${left}%"></span></div><b>${left}</b></div></div>`;
+  return `<div class="planes">${row(0)}${row(1)}<div class="plane-left"><span>Extra input</span><div class="meter"><span style="width:${left / MAX_MOVES * 100}%"></span></div><b>${left} ÷ ${MAX_MOVES} = ${(left / MAX_MOVES).toFixed(3)}</b></div><p class="small">2 players × 4 ages × 16 squares = <b>128</b>. Add moves remaining as a fraction: <b>129 inputs</b>.</p></div>`;
 }
 
 function wires() {
@@ -104,7 +105,7 @@ function networkView(network, state) {
   const allowed = new Set(legalMoves(state));
   const parameters = network.layers.reduce((total, layer) => total + layer.in * layer.out + layer.out, 0);
   return `<div class="ann" role="img" aria-label="The network: 129 inputs, two layers of 256 neurons, 16 scores">
-      <figure><div class="ann-inputs">${grid.map((cells, k) => planeGrid(cells, k < 4 ? (state.player ? "o" : "x") : (state.player ? "x" : "o"), "tiny")).join("")}</div><figcaption><b>129</b> inputs</figcaption></figure>
+      <figure><div class="ann-inputs">${grid.map((cells, k) => planeGrid(cells, k < 4 ? (state.player ? "o" : "x") : (state.player ? "x" : "o"), "tiny")).join("")}</div><div class="ann-extra">+ 1 moves-left input: <b>${((MAX_MOVES - state.moves) / MAX_MOVES).toFixed(3)}</b></div><figcaption><b>128 + 1 = 129</b> inputs</figcaption></figure>
       ${wires()}
       <figure>${neurons(first)}<figcaption><b>256</b> neurons</figcaption></figure>
       ${wires()}
@@ -112,21 +113,36 @@ function networkView(network, state) {
       ${wires()}
       <figure><div class="ann-out">${Array.from(out, (q, cell) => allowed.has(cell) ? `<i style="--heat:${heat(q)}">${signed(q)}</i>` : "<i class=\"taken\"></i>").join("")}</div><figcaption><b>16</b> scores</figcaption></figure>
     </div>
-    <p class="small">${parameters.toLocaleString()} weights, all learned by playing itself.</p>`;
+    <p class="small ann-caption">${parameters.toLocaleString()} learned weights and biases. Higher scores are better; occupied squares are blank.</p>`;
+}
+
+function lookaheadView() {
+  return `<p class="search-summary">Try X → best O reply → best X response</p><p class="small">The network scores the future boards. Higher is better for X.</p>`;
 }
 
 function trainingView(data) {
   const games = data?.episodes ?? 0;
   const curve = data?.curve ?? [];
-  const rate = (p) => p.wins / (p.wins + p.draws + p.losses);
-  const points = curve.map((p) => `${34 + (p.episodes / Math.max(1, games)) * 258},${76 - rate(p) * 68}`).join(" ");
-  return `<ol class="loop">
-      <li><b>Play itself</b><span>one network plays X and O</span></li>
-      <li><b>Score the moves</b><span>+1 win, −1 loss, 0 draw</span></li>
-      <li><b>Adjust the weights</b><span>closer to what happened</span></li>
-      <li><b>Repeat</b><span>${games ? games.toLocaleString() : "many"} games</span></li>
+  const rate = (p) => p.wins / Math.max(1, p.wins + p.draws + p.losses);
+  const x = (episodes) => 48 + episodes / Math.max(1, games) * 432;
+  const y = (value) => 172 - value * 140;
+  const compact = (n) => n >= 1e6 ? (n / 1e6).toLocaleString(undefined, { maximumFractionDigits: 1 }) + "m" : n >= 1000 ? (n / 1000) + "k" : n;
+  const points = curve.map((p) => x(p.episodes) + "," + y(rate(p))).join(" ");
+  return `<div class="training-layout"><ol class="loop">
+      <li><b>Play itself</b><span>One network plays both sides.</span></li>
+      <li><b>Score the result</b><span>Win +1 · loss −1 · draw 0</span></li>
+      <li><b>Update the network</b><span>Learn from the moves played.</span></li>
+      <li><b>Repeat</b><span>Improve over many games.</span></li>
     </ol>
-    ${curve.length > 1 ? `<figure class="mini-curve"><svg viewBox="0 0 300 92" role="img" aria-label="Win rate against the tactical player while training"><path d="M34 8V76H292" class="axis"/><polyline points="${points}"/><text x="34" y="90">0</text><text x="292" y="90" text-anchor="end">${games.toLocaleString()} games</text><text x="30" y="11" text-anchor="end">100%</text><text x="30" y="79" text-anchor="end">0%</text></svg><figcaption>Network alone vs the tactical player while training</figcaption></figure>` : ""}`;
+    ${curve.length > 1 ? `<figure class="mini-curve"><figcaption><b>Win rate during training</b><span>Network alone vs tactical opponent</span></figcaption>
+      <svg viewBox="0 0 510 214" role="img" aria-label="Win rate from 0 to 100 percent over ${games.toLocaleString()} training games">
+        ${[0, 0.5, 1].map((v) => `<path class="chart-guide" d="M48 ${y(v)}H480"/><text x="38" y="${y(v) + 4}" text-anchor="end">${v * 100}%</text>`).join("")}
+        <path class="axis" d="M48 32V172H480"/>
+        ${[0, 0.25, 0.5, 0.75, 1].map((v) => `<text x="${x(games * v)}" y="191" text-anchor="middle">${compact(games * v)}</text>`).join("")}
+        <text x="264" y="210" text-anchor="middle">Training games</text>
+        <polyline points="${points}"/>
+        ${curve.map((p) => `<circle cx="${x(p.episodes)}" cy="${y(rate(p))}" r="3"><title>${p.episodes.toLocaleString()} games: ${(rate(p) * 100).toFixed(1)}% wins</title></circle>`).join("")}
+      </svg></figure>` : '<p class="small">Training chart unavailable.</p>'}</div>`;
 }
 
 // loader() resolves to the trained network; onFinish runs after the last step.
@@ -160,7 +176,9 @@ export function initFIFOLearn(root, loader, onFinish = () => {}) {
   let view = null;
   let network = null;
   let results = null;
-  let size = null;
+  let search = null;
+  let quizScores = null;
+  let scoring = false;
 
   const cells = Array.from({ length: 16 }, (_, cell) => {
     const button = document.createElement("button");
@@ -208,7 +226,16 @@ export function initFIFOLearn(root, loader, onFinish = () => {}) {
     const { state, phase } = view;
     const board = boardOf(state);
     const line = typeof state.winner === "number" ? LINES.find((cells) => cells.every((cell) => board[cell] === state.winner)) ?? [] : [];
-    const scores = quiz && network && phase !== "done" ? moveValues(network, state) : null;
+    if (quiz && network && !quizScores && !scoring) {
+      scoring = true;
+      Promise.resolve(search.evaluate(quizState(), DEPTH)).then((scores) => {
+        quizScores = scores;
+        if (isQuiz()) render();
+      }).catch(() => {
+        if (isQuiz()) $("note").textContent = "Scores unavailable. You can still try a move.";
+      });
+    }
+    const scores = quiz && phase !== "done" ? quizScores : null;
     const waiting = lesson?.reply !== undefined && phase === "start";
     const target = rules ? lesson.target : QUIZ.target;
     const interactive = rules || quiz;
@@ -241,20 +268,22 @@ export function initFIFOLearn(root, loader, onFinish = () => {}) {
     if (rules) text = view.message ?? (phase === "done" ? lesson.after : phase === "replied" ? lesson.middle : lesson.before);
     if (quiz) {
       text = view.message ?? (phase === "done"
-        ? `Right. Blocking at ${position(target)} is the only move that doesn’t lose. With this look-ahead it never lost a game in testing.`
-        : `Before each move it tries every move, every reply and its next move, ${size ? `${size.toLocaleString()} positions here, ` : ""}then lets the network judge where each line ends. Where would you play?`);
+        ? `Right. Blocking at ${position(target)} stops O’s immediate win.`
+        : `It tries three moves before choosing one. Where would you play to stop O’s row?`);
     }
     if (label === "Training") {
-      text = `It played itself ${results ? `${results.episodes.toLocaleString()} games${results.seconds ? ` in ${Math.round(results.seconds / 60)} minutes on a GPU` : ""}` : "for millions of games"}. Each finished game nudges the network toward what happened.`;
+      text = `It played itself ${results ? `${results.episodes.toLocaleString()} games${results.seconds ? ` in ${Math.round(results.seconds / 60)} minutes on a GPU` : ""}` : "for millions of games"}. It improves by learning from the results.`;
     }
     $("text").textContent = text;
     $("visual").innerHTML = label === "Inputs" ? inputsView(state)
       : label === "Network" ? (network ? networkView(network, state) : "<p class=\"small\">Loading the network…</p>")
+      : label === "Look-ahead" ? lookaheadView()
       : label === "Training" ? trainingView(results)
       : "";
     $("left").hidden = label === "Training";
     $("main").classList.toggle("wide", label === "Training");
-    $("note").innerHTML = quiz && !network ? "Loading the agent’s scores…"
+    $("main").classList.toggle("network-layout", label === "Network");
+    $("note").innerHTML = quiz && !quizScores ? "Loading the agent’s scores…"
       : quiz && phase !== "done" ? "−0.90 = O wins next turn · higher is better"
       : `<b class="fifo-x">X</b> moves first · dots = turns left · faded = next to go`;
     $("reply").hidden = !waiting;
@@ -266,7 +295,6 @@ export function initFIFOLearn(root, loader, onFinish = () => {}) {
   function go(next) {
     if (next >= STEPS.length) { onFinish(); return; }
     step = Math.max(0, next);
-    if (STEPS[step].label === "Look-ahead" && size === null) size = searchSize(quizState(), DEPTH);
     if (STEPS[step].label === "Training" && !results) {
       fetch("data/fifo-evaluation.json").then((r) => (r.ok ? r.json() : null)).then((data) => { results = data; if (STEPS[step].label === "Training") render(); }).catch(() => {});
     }
@@ -286,7 +314,7 @@ export function initFIFOLearn(root, loader, onFinish = () => {}) {
   $("next").addEventListener("click", () => go(step + 1));
   steps.forEach((button, i) => button.addEventListener("click", () => go(i)));
   reset();
-  loader().then((loaded) => { network = loaded; render(); }).catch(() => {
+  loader().then((loaded) => { network = loaded; search = createSearch(network); render(); }).catch(() => {
     $("note").textContent = "The agent couldn’t load.";
   });
   return { get step() { return step; } };

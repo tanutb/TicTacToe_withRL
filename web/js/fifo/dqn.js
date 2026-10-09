@@ -50,10 +50,15 @@ export function activations(network, state) {
   network.layers.forEach((layer, index) => {
     const x = layers.at(-1);
     const y = new Float32Array(layer.out);
+    const active = [];
+    for (let i = 0; i < x.length; i++) if (x[i]) active.push(i);
     for (let o = 0; o < layer.out; o++) {
       let sum = layer.bias[o];
       const row = o * layer.in;
-      for (let i = 0; i < layer.in; i++) if (x[i]) sum += layer.weight[row + i] * x[i];
+      for (let j = 0; j < active.length; j++) {
+        const i = active[j];
+        sum += layer.weight[row + i] * x[i];
+      }
       y[o] = index < network.layers.length - 1 ? Math.max(0, sum) : sum;
     }
     layers.push(y);
@@ -77,11 +82,32 @@ export function moveValues(network, state, depth = DEPTH) {
     for (const cell of legal) values[cell] = q[cell];
     return values;
   }
+  // Each root score remains exact. Prune only replies that cannot change its best value.
+  function best(position, remaining, alpha, beta) {
+    const moves = legalMoves(position);
+    if (remaining === 0) {
+      const q = qValues(network, position);
+      let value = -Infinity;
+      for (const cell of moves) value = Math.max(value, q[cell]);
+      return value;
+    }
+    let value = -Infinity;
+    for (const cell of moves) {
+      const next = playMove(position, cell);
+      const score = next.winner !== null
+        ? (next.winner === position.player ? 1 : 0)
+        : -network.gamma * best(next, remaining - 1, -beta / network.gamma, -alpha / network.gamma);
+      value = Math.max(value, score);
+      alpha = Math.max(alpha, value);
+      if (alpha >= beta) break;
+    }
+    return value;
+  }
   for (const cell of legal) {
     const next = playMove(state, cell);
     values[cell] = next.winner !== null
       ? (next.winner === state.player ? 1 : 0)
-      : -network.gamma * Math.max(...moveValues(network, next, depth - 1));
+      : -network.gamma * best(next, depth - 1, -Infinity, Infinity);
   }
   return values;
 }

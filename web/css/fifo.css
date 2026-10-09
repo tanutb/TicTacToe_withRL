@@ -143,3 +143,87 @@
   .loop { grid-template-columns: 1fr 1fr; }
   .loop li:nth-child(2)::after { content: none; }
 }
+
+/* Balanced walkthrough: keep the board and explanation together. */
+.fifo-page main { max-width: 1160px; }
+.fifo-page .learn { max-width: 1080px; gap: 16px; }
+.fifo-page .stepper { padding: 12px 18px; }
+.fifo-page .lab-main { grid-template-columns: 216px minmax(0, 1fr); gap: 28px; padding: 24px; align-items: start; }
+.fifo-page .lab-main.wide { grid-template-columns: minmax(0, 1fr); }
+.fifo-page .fifo-mini { width: 216px; }
+.fifo-page .lab-board { gap: 10px; }
+.fifo-page .lab-story { min-width: 0; gap: 16px; }
+.fifo-page .lab-story p { max-width: 68ch; line-height: 1.55; }
+.fifo-page .lab-story .actions:not(:has(button:not([hidden]))) { display: none; }
+.fifo-page .learn-navigation { margin-top: 8px; }
+.fifo-page .ann { grid-template-columns: minmax(0, .8fr) 20px minmax(0, 1fr) 20px minmax(0, 1fr) 20px minmax(0, 1fr); }
+.fifo-page .ann-inputs { width: 88px; max-width: 100%; justify-self: center; gap: 3px; }
+.fifo-page .ann figcaption { font-size: .75rem; }
+.fifo-page .ann-out i { font-size: .68rem; }
+.ann-extra { text-align: center; color: var(--muted); font-size: .7rem; line-height: 1.4; }
+.ann-caption { margin-top: 12px; }
+.fifo-page .planes { gap: 14px; }
+.fifo-page .plane-left { grid-template-columns: 76px minmax(20px, 1fr) auto; }
+.search-summary { padding: 12px 14px; margin-bottom: 10px; background: var(--paper); border-radius: 8px; font-size: .88rem; }
+.fifo-speed-labels { display: flex; justify-content: space-between; padding-left: 56px; margin-top: 4px; }
+.fifo-rules { max-width: 480px; padding-top: 8px; border-top: 1px solid var(--line); text-align: center; font-size: .78rem; line-height: 1.55; }
+.fifo-rules b { color: var(--text); }
+.fifo { --board: max(220px, min(460px, calc(100svh - 330px), calc(100vw - 392px))); }
+.training-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 32px; align-items: center; }
+.training-layout .loop { grid-template-columns: 1fr; gap: 10px; counter-reset: training; }
+.training-layout .loop li { padding: 9px 12px 9px 38px; font-size: .84rem; border-radius: 6px; }
+.training-layout .loop li::before { counter-increment: training; content: counter(training); position: absolute; left: 14px; top: 10px; color: var(--muted); }
+.training-layout .loop li::after { content: none; }
+.training-layout .mini-curve { max-width: none; width: 100%; gap: 10px; }
+.training-layout .mini-curve figcaption { display: grid; gap: 3px; font-size: .78rem; padding-left: 9.4%; }
+.training-layout .mini-curve figcaption b { color: var(--text); font-size: .9rem; }
+.training-layout .mini-curve svg { display: block; max-height: 245px; }
+.training-layout .mini-curve text { font-size: 11px; }
+.chart-guide { fill: none; stroke: var(--line); stroke-dasharray: 3 4; }
+.mini-curve circle { fill: var(--ink); stroke: var(--surface); stroke-width: 1; }
+@media (max-width: 900px) and (min-width: 761px) {
+  .fifo-page .lab-main { grid-template-columns: 180px minmax(0, 1fr); gap: 20px; padding: 20px; }
+  .fifo-page .fifo-mini { width: 180px; }
+  .fifo-page .ann { grid-template-columns: minmax(0, .8fr) 12px minmax(0, 1fr) 12px minmax(0, 1fr) 12px minmax(0, 1fr); }
+  .fifo-page .ann-out i { font-size: .58rem; }
+}
+@media (max-width: 760px) {
+  .fifo { --board: min(440px, calc(100vw - 32px), max(260px, calc(100svh - 340px))); }
+  .fifo-page .lab-main { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 18px; }
+  .fifo-page .stepper { padding: 10px; }
+  .training-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .training-layout .loop { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .fifo-page .ann { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; max-width: 360px; margin-inline: auto; }
+  .fifo-page .ann-out i { font-size: .8rem; }
+  .fifo-page .plane-left { grid-template-columns: 1fr auto; }
+  .fifo-page .plane-left .meter { display: none; }
+}
+
+/* Results stay together at desktop sizes, without clipping content. */
+.fifo-page .results { gap: 12px; padding-top: 6px; }
+.fifo-page .results > .lede { max-width: none; font-size: .85rem; line-height: 1.55; }
+.fifo-page .results-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 16px; }
+.fifo-page .results .card { padding: 16px 18px; gap: 10px; }
+.fifo-page .results h2 { font-size: 1rem; }
+.fifo-page .results h2 .small { margin-left: 6px; font-size: .78rem; }
+.fifo-page .results .bars { gap: 10px; }
+.fifo-page .results .bar-row { gap: 3px; }
+.fifo-page .results .bar { height: 23px; }
+.fifo-page .results .bar-row > .small { font-size: .78rem; }
+.fifo-page .results .curve { display: block; height: 230px; align-self: center; }
+.fifo-page .results .fifo-style div { padding: 8px 12px; }
+.fifo-page .results .fifo-style dd { font-size: 1.1rem; }
+.fifo-page .results .fifo-behavior { gap: 8px; }
+.fifo-page .results .facts { display: flex; flex-wrap: wrap; gap: 6px 24px; padding: 0; list-style: none; font-size: .78rem; }
+@media (min-width: 821px) and (max-height: 740px) {
+  .fifo-page .results .card { padding: 12px 16px; gap: 8px; }
+  .fifo-page .results .curve { height: 205px; }
+  .fifo-page .results .bars { gap: 8px; }
+}
+@media (max-width: 760px) {
+  .fifo-page .results-grid { grid-template-columns: minmax(0, 1fr); }
+  .fifo-page .results .curve { height: auto; }
+  .fifo-page .results .facts { display: grid; gap: 6px; }
+}

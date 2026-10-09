@@ -447,7 +447,7 @@ document.addEventListener("keydown", (e) => {
 
 initTheme();
 
-const tabs = initTabs(["play", "results", "learn"]);
+let tabs;
 
 // ---------- results section ----------
 
@@ -480,7 +480,9 @@ function renderBars() {
   }
 }
 
+const curveCache = new Map();
 function curveData() {
+  if (curveCache.has(view.seat)) return curveCache.get(view.seat);
   const points = [...new Set(evaluation.curves.map((c) => c.episodes))].sort((a, b) => a - b);
   const series = {};
   for (const name of Object.keys(NAMES)) {
@@ -489,7 +491,9 @@ function curveData() {
       return rows.reduce((sum, c) => sum + c.win_rate, 0) / rows.length;
     });
   }
-  return { points, series };
+  const data = { points, series };
+  curveCache.set(view.seat, data);
+  return data;
 }
 
 const W = 520, H = 240, PAD = { left: 40, right: 10, top: 10, bottom: 28 };
@@ -599,11 +603,14 @@ async function loadJson(path) {
 // ---------- how it learns tab ----------
 
 // the trained agent's real Q-values for the example board, once the policies have loaded
-const learning = initLearning((algorithm) => {
+let learning = null;
+function prepareLearning() {
+  return learning ??= initLearning((algorithm) => {
   const policy = policies[algorithm];
   const entry = policy?.states[START];
   return entry ? { values: entry.values.map((v) => displayQ(algorithm, v)), boards: Object.keys(policy.states).length } : null;
-});
+  });
+}
 
 async function start() {
   if (store("ttt-thinking")) {
@@ -615,10 +622,16 @@ async function start() {
     await Promise.all(Object.keys(NAMES).map(async (name) => (policies[name] = await loadJson(`data/${name}.json`))));
     game.ready = true;
     newGame();
-    learning.render();
+    learning?.render();
   } catch (err) {
     showError(`Couldn't load the agents (${err.message}). Start the demo with "python demo.py", opening index.html directly won't work.`);
   }
+}
+
+let resultsLoading = false;
+async function loadResults() {
+  if (evaluation || resultsLoading) return;
+  resultsLoading = true;
   try {
     evaluation = await loadJson("data/evaluation.json");
     renderResults();
@@ -626,7 +639,11 @@ async function start() {
   } catch (err) {
     $("#results-error").hidden = false;
     $("#results-error").textContent = `Couldn't load the results (${err.message}). Run "python evaluate.py" to create them.`;
-  }
+  } finally { resultsLoading = false; }
 }
 
+tabs = initTabs(["play", "results", "learn"], (tab) => {
+  if (tab === "results") loadResults();
+  if (tab === "learn") prepareLearning();
+});
 start();

@@ -56,7 +56,7 @@ test("reject occupied cells including oldest, invalid cells, and moves after a w
   assert.throws(() => playMove(state, 9));
 });
 
-test("100 moves draws, while a win on move 100 takes priority", () => {
+test("the move limit draws, while a win on the final move takes priority", () => {
   const state = initialState();
   state.moves = MAX_MOVES - 1;
   assert.equal(playMove(state, 0).winner, "draw");
@@ -76,7 +76,7 @@ test("the encoding splits each side's marks by turns until they disappear", () =
   assert.equal(x[6 * 16 + 10], 1);
   assert.equal(x[7 * 16 + 14], 1);
   assert.equal(x.slice(0, 128).reduce((a, b) => a + b), 6);
-  assert.ok(Math.abs(x[128] - 0.94) < 1e-6);
+  assert.ok(Math.abs(x[128] - (MAX_MOVES - state.moves) / MAX_MOVES) < 1e-6);
 });
 
 test("the network runs ReLU layers and rejects files for other rules or shapes", () => {

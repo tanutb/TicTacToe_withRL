@@ -53,8 +53,9 @@ function mount(t, failFetch = false) {
     }
   });
   const callbacks = new Map();
+  const delays = [];
   let id = 0;
-  t.mock.method(globalThis, "setTimeout", (callback) => { callbacks.set(++id, callback); return id; });
+  t.mock.method(globalThis, "setTimeout", (callback, delay) => { delays.push(delay); callbacks.set(++id, callback); return id; });
   t.mock.method(globalThis, "clearTimeout", (timer) => callbacks.delete(timer));
   t.mock.method(Math, "random", () => 0);
   t.mock.method(globalThis, "fetch", async (url) => ({
@@ -65,7 +66,7 @@ function mount(t, failFetch = false) {
   const get = (id) => elements.get(`fifo-${id}`);
   get("speed").value = "800";
   return {
-    controller, get, callbacks,
+    controller, get, callbacks, delays,
     cell: (index) => get("board").children[index],
     settle: () => new Promise((resolve) => setImmediate(resolve)),
     tick() {
@@ -177,7 +178,7 @@ test("failed FIFO policy loads expose a retry and leave the board disabled", asy
 test("with look-ahead the agent blocks a row the network alone would miss", async (t) => {
   const ui = mount(t);
   ui.controller.setActive(true); await ui.settle();
-  assert.match(ui.get("depth-note").textContent, /never lost/i);
+  assert.equal(ui.get("depth-3").attributes["aria-pressed"], "true");
   // X builds r2 c1-c3; the zero network has no idea, but the 3-move search sees the threat
   ui.cell(4).fire(); ui.tick();
   ui.cell(5).fire(); ui.tick();
@@ -186,4 +187,61 @@ test("with look-ahead the agent blocks a row the network alone would miss", asyn
   ui.get("depth-0").fire();
   assert.equal(ui.get("depth-0").attributes["aria-pressed"], "true");
   assert.match(ui.get("depth-note").textContent, /Network only/);
+});
+
+
+test("FIFO playback gets faster to the right and reschedules the pending move", async (t) => {
+  const ui = mount(t);
+  ui.controller.setActive(true); await ui.settle();
+  ui.get("watch-mode").fire();
+  ui.get("speed").value = "200";
+  ui.get("auto").fire();
+  assert.equal(ui.delays.at(-1), 1600);
+  ui.get("speed").value = "1600";
+  ui.get("speed").fire("input");
+  assert.equal(ui.delays.at(-1), 200);
+  assert.equal(ui.callbacks.size, 1, "the old timer is replaced");
+  ui.get("auto").fire();
+  assert.equal(ui.callbacks.size, 0);
+  ui.get("speed").fire("input");
+  assert.equal(ui.callbacks.size, 0, "changing speed while paused does not start playback");
+});
+
+
+test("background results cannot play stale moves after undo or leaving the tab", async (t) => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, "Worker");
+  let worker;
+  globalThis.Worker = class {
+    jobs = [];
+    constructor() { worker = this; }
+    postMessage(data) { if (data.state) this.jobs.push(data); }
+    terminate() {}
+    reply() {
+      const job = this.jobs.shift();
+      assert.ok(job);
+      this.onmessage({ data: { id: job.id, values: Array(16).fill(0) } });
+    }
+  };
+  t.after(() => {
+    if (previous) Object.defineProperty(globalThis, "Worker", previous);
+    else delete globalThis.Worker;
+  });
+  const ui = mount(t);
+  ui.controller.setActive(true); await ui.settle();
+  assert.equal(ui.cell(5).disabled, false, "human can play before scores arrive");
+  ui.cell(5).fire();
+  ui.get("undo").fire();
+  worker.reply(); await ui.settle();
+  worker.reply(); await ui.settle();
+  assert.equal(ui.get("log").children.length, 0);
+  assert.equal(ui.callbacks.size, 0);
+  ui.get("side").value = "1"; ui.get("side").fire("change");
+  ui.controller.setActive(false);
+  worker.reply(); await ui.settle();
+  assert.equal(ui.callbacks.size, 0, "no agent move is scheduled in a hidden tab");
+  assert.equal(ui.get("log").children.length, 0);
+  ui.controller.setActive(true);
+  assert.equal(ui.callbacks.size, 1);
+  ui.tick();
+  assert.equal(ui.get("log").children.length, 1);
 });

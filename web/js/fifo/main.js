@@ -16,8 +16,9 @@ const loader = () => (network ??= fetchNetwork().catch((error) => {
 
 const play = initFIFO(document.getElementById("panel-play"), loader);
 const results = initFIFOResults(document.getElementById("panel-results"));
-initFIFOLearn(document.getElementById("panel-learn"), loader, () => document.getElementById("tab-play").click());
+let learn = null;
 initTabs(["play", "results", "learn"], (tab) => {
   play.setActive(tab === "play");
   if (tab === "results") results.load();
+  if (tab === "learn" && !learn) learn = initFIFOLearn(document.getElementById("panel-learn"), loader, () => document.getElementById("tab-play").click());
 });
