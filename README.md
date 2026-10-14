@@ -26,6 +26,8 @@ Play them in your browser, see what they're thinking, and find out how they lear
   </tr>
 </table>
 
+[Demo website](https://tanutb.github.io/TicTacToe_withRL/)
+
 [Run it locally](#quick-start) · [Demo tour](#demo-tour) · [Classic 3×3](#classic-33) · [4×4 FIFO](#44-fifo)
 
 [![Deploy web demo](https://github.com/tanutb/TicTacToe_withRL/actions/workflows/pages.yml/badge.svg)](https://github.com/tanutb/TicTacToe_withRL/actions/workflows/pages.yml)
